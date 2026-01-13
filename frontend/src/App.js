@@ -1188,6 +1188,7 @@ function App() {
   const [userWhatsapp, setUserWhatsapp] = useState("");
   const [discountCode, setDiscountCode] = useState("");
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const [promoMessage, setPromoMessage] = useState({ type: '', text: '' }); // New: dedicated promo message
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [showConfirmPayment, setShowConfirmPayment] = useState(false);
