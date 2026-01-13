@@ -1720,50 +1720,88 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
               </div>
               
               {/* Expanded Campaign Details (when sending) */}
-              {campaigns.filter(c => c.status === 'sending').map(campaign => (
-                <div key={`detail-${campaign.id}`} className="mt-6 p-4 rounded-xl glass">
-                  <h4 className="text-white font-semibold mb-3">🔄 {campaign.name} - En cours d'envoi</h4>
-                  <p className="text-white text-sm mb-3 opacity-70">Cliquez sur un contact pour ouvrir le lien et marquer comme envoyé</p>
-                  
-                  <div className="space-y-2" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                    {campaign.results?.map((result, idx) => (
-                      <div key={idx} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-black/30">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-white text-sm truncate">{result.contactName}</span>
-                          <span className="text-xs opacity-50">
-                            {result.channel === 'whatsapp' && '📱'}
-                            {result.channel === 'email' && '📧'}
-                            {result.channel === 'instagram' && '📸'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {result.status === 'pending' && (
-                            <a 
-                              href={result.channel === 'whatsapp' 
-                                ? generateWhatsAppLink(result.contactPhone, campaign.message, campaign.mediaUrl, result.contactName)
-                                : result.channel === 'email'
-                                ? generateEmailLink(result.contactEmail, campaign.name, campaign.message, campaign.mediaUrl, result.contactName)
-                                : `https://instagram.com`}
-                              target="_blank" rel="noopener noreferrer"
-                              onClick={() => markResultSent(campaign.id, result.contactId, result.channel)}
-                              className="px-3 py-1 rounded text-xs bg-purple-600 hover:bg-purple-700 text-white"
-                            >
-                              Envoyer
-                            </a>
-                          )}
-                          {result.status === 'sent' && (
-                            <span className="px-2 py-1 rounded text-xs bg-green-600/30 text-green-400">✅ Envoyé</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+              {campaigns.filter(c => c.status === 'sending').map(campaign => {
+                // Helper to check if WhatsApp link is valid
+                const getWhatsAppLinkOrError = (result) => {
+                  if (result.channel !== 'whatsapp') return { link: null, error: false };
+                  const link = generateWhatsAppLink(result.contactPhone, campaign.message, campaign.mediaUrl, result.contactName);
+                  return { link, error: !link };
+                };
+                
+                return (
+                  <div key={`detail-${campaign.id}`} className="mt-6 p-4 rounded-xl glass">
+                    <h4 className="text-white font-semibold mb-3">🔄 {campaign.name} - En cours d'envoi</h4>
+                    <p className="text-white text-sm mb-3 opacity-70">Cliquez sur un contact pour ouvrir le lien et marquer comme envoyé</p>
+                    
+                    <div className="space-y-2" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      {campaign.results?.map((result, idx) => {
+                        const whatsappResult = result.channel === 'whatsapp' ? getWhatsAppLinkOrError(result) : { link: null, error: false };
+                        const hasError = (result.channel === 'whatsapp' && whatsappResult.error) || 
+                                        (result.channel === 'email' && !result.contactEmail) ||
+                                        result.status === 'failed';
+                        
+                        return (
+                          <div key={idx} className={`flex items-center justify-between gap-2 p-2 rounded-lg ${hasError ? 'bg-red-900/30 border border-red-500/30' : 'bg-black/30'}`}>
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              {hasError && <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></span>}
+                              <span className="text-white text-sm truncate">{result.contactName}</span>
+                              <span className="text-xs opacity-50">
+                                {result.channel === 'whatsapp' && '📱'}
+                                {result.channel === 'email' && '📧'}
+                                {result.channel === 'instagram' && '📸'}
+                              </span>
+                              {result.channel === 'whatsapp' && (
+                                <span className="text-xs opacity-40 truncate">({result.contactPhone || 'Pas de numéro'})</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {result.status === 'pending' && !hasError && (
+                                <a 
+                                  href={result.channel === 'whatsapp' 
+                                    ? whatsappResult.link
+                                    : result.channel === 'email'
+                                    ? generateEmailLink(result.contactEmail, campaign.name, campaign.message, campaign.mediaUrl, result.contactName)
+                                    : `https://instagram.com`}
+                                  target="_blank" rel="noopener noreferrer"
+                                  onClick={() => markResultSent(campaign.id, result.contactId, result.channel)}
+                                  className="px-3 py-1 rounded text-xs bg-purple-600 hover:bg-purple-700 text-white"
+                                >
+                                  Envoyer
+                                </a>
+                              )}
+                              {result.status === 'pending' && hasError && (
+                                <span className="px-2 py-1 rounded text-xs bg-red-600/30 text-red-400">
+                                  {result.channel === 'whatsapp' ? '❌ N° invalide' : '❌ Email manquant'}
+                                </span>
+                              )}
+                              {result.status === 'sent' && (
+                                <span className="px-2 py-1 rounded text-xs bg-green-600/30 text-green-400">✅ Envoyé</span>
+                              )}
+                              {result.status === 'failed' && (
+                                <span className="px-2 py-1 rounded text-xs bg-red-600/30 text-red-400">❌ Échec</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className="mt-3 flex justify-between text-xs">
+                      <span className="text-purple-400">
+                        Progression: {campaign.results?.filter(r => r.status === 'sent').length || 0} / {campaign.results?.length || 0} envoyé(s)
+                      </span>
+                      {campaign.results?.some(r => r.status === 'pending' && (
+                        (r.channel === 'whatsapp' && !formatPhoneForWhatsApp(r.contactPhone)) ||
+                        (r.channel === 'email' && !r.contactEmail)
+                      )) && (
+                        <span className="text-red-400">
+                          ⚠️ Certains contacts ont des informations manquantes
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div className="mt-3 text-xs text-purple-400">
-                    Progression: {campaign.results?.filter(r => r.status === 'sent').length || 0} / {campaign.results?.length || 0} envoyé(s)
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
