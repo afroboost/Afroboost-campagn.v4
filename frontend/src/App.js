@@ -471,30 +471,30 @@ const MediaDisplay = ({ url, className }) => {
     pointerEvents: 'auto'
   };
 
-  // Top bar overlay - Balance: hide YouTube UI but keep video visible
+  // Top bar overlay - Hide YouTube title/info bar precisely
   const topBarOverlayStyle = {
     position: 'absolute',
     top: 0,
     left: 0,
     width: '100%',
-    height: isMobile ? '50px' : '80px', // Smaller on mobile but still hides title
+    height: isMobile ? '55px' : '80px',
     zIndex: 15,
     background: isMobile 
-      ? 'linear-gradient(180deg, #000000 0%, #000000 30%, rgba(0,0,0,0.5) 70%, transparent 100%)'
+      ? 'linear-gradient(180deg, #000000 0%, #000000 60%, transparent 100%)'
       : 'linear-gradient(180deg, #000000 0%, #000000 50%, rgba(0,0,0,0.8) 80%, transparent 100%)',
     pointerEvents: 'auto'
   };
 
-  // Bottom bar overlay - Balance: hide YouTube logo but keep video visible
+  // Bottom bar overlay - Hide YouTube watermark precisely
   const bottomBarOverlayStyle = {
     position: 'absolute',
     bottom: 0,
     left: 0,
     width: '100%',
-    height: isMobile ? '45px' : '70px', // Smaller on mobile but still hides watermark
+    height: isMobile ? '50px' : '70px',
     zIndex: 15,
     background: isMobile 
-      ? 'linear-gradient(0deg, #000000 0%, #000000 30%, rgba(0,0,0,0.5) 70%, transparent 100%)'
+      ? 'linear-gradient(0deg, #000000 0%, #000000 60%, transparent 100%)'
       : 'linear-gradient(0deg, #000000 0%, #000000 50%, rgba(0,0,0,0.8) 80%, transparent 100%)',
     pointerEvents: 'auto'
   };
