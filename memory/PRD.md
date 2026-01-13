@@ -5,7 +5,7 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 
 ## User Personas
 - **Utilisateurs**: Participants aux cours de fitness qui réservent des casques audio
-- **Coach**: Administrateur qui gère les cours, offres, réservations et codes promo
+- **Coach**: Administrateur qui gère les cours, offres, réservations, codes promo et campagnes marketing
 
 ## Core Requirements
 
@@ -20,7 +20,7 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 ### Mode Coach Secret
 - [x] Accès par 3 clics rapides sur le copyright
 - [x] Login avec credentials (coach@afroboost.com / afroboost123)
-- [x] Tableau de bord avec 6 onglets
+- [x] Tableau de bord avec 7 onglets (Réservations, Concept, Cours, Offres, Paiements, Codes promo, Campagnes)
 
 ### Administration (Mode Coach)
 - [x] **Réservations**: Tableau complet avec export CSV
@@ -28,7 +28,8 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - Description du concept (textarea)
   - URL Média 16:9 (YouTube/Vimeo/Image)
   - URL du Logo (Splash Screen & PWA)
-- [x] **Cours**: CRUD complet avec jour, heure, lieu, lien Maps
+  - URL du Favicon
+- [x] **Cours**: CRUD complet avec jour, heure, lieu, lien Maps, toggle visibilité
 - [x] **Offres**: 
   - Nom, Prix, URL miniature, Visible
   - Description pour icône "i" (max 150 caractères)
@@ -38,6 +39,13 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - Liste cours autorisés avec scroll
   - Bouton supprimer (poubelle rouge)
   - Import CSV
+- [x] **📢 Campagnes Marketing** (NOUVEAU):
+  - Création de campagnes multi-canaux (WhatsApp, Email, Instagram)
+  - Programmation multi-dates (chaque date = ligne distincte)
+  - Sélection de contacts ciblés
+  - Aperçu visuel du média
+  - Lancement et suivi des envois
+  - Indicateurs d'erreur visuels (point rouge pour numéros invalides)
 
 ### Internationalisation (i18n)
 - [x] FR, EN, DE
@@ -53,22 +61,42 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 
 ## What's Been Implemented (Jan 2026)
 
-### Corrections techniques (13 Jan 2026)
-1. ✅ **Lecteur vidéo étanche 16:9**: 
-   - Paramètres YouTube: `modestbranding=1&rel=0&showinfo=0&controls=0&disablekb=1&fs=0`
-   - Overlays CSS noir en haut (80px) et en bas (70px) pour masquer titre/logo YouTube
-   - Overlay complet pour bloquer tous les clics
-2. ✅ **Description du concept**: 
-   - Textarea dans Mode Coach → sauvegarde via API → rechargement automatique sur la page d'accueil
-   - useEffect avec dépendance `coachMode` pour rafraîchir les données
-3. ✅ **Favicon & Logo dynamique**: 
-   - useEffect qui met à jour `<link rel="icon">` quand `concept.logoUrl` change
-   - Aussi mis à jour pour `apple-touch-icon`
-4. ✅ **Cadre vide**: Condition `{concept.heroImageUrl && concept.heroImageUrl.trim() !== ''}` pour ne rien afficher si vide
+### Module Gestionnaire de Campagnes (13 Jan 2026)
+1. ✅ **Création de campagnes marketing**:
+   - Formulaire complet: nom, message avec variables {prénom}, URL média, format (9:16/16:9)
+   - Canaux d'envoi: WhatsApp, Email, Instagram
+   - Ciblage: Tous les contacts ou sélection individuelle
+   
+2. ✅ **Programmation multi-dates**:
+   - Option "Programmer (multi-dates)" avec ajout/suppression de créneaux
+   - Chaque date crée une campagne distincte avec statut "Programmé"
+   - Calendrier avec restriction aux dates futures
+   
+3. ✅ **Génération de liens WhatsApp optimisée**:
+   - Format: `https://api.whatsapp.com/send?phone=41XXXXXXXXX&text=...`
+   - Nettoyage automatique des numéros suisses (0765203363 → 41765203363)
+   - URL du média à la fin du message (active l'aperçu WhatsApp)
+   
+4. ✅ **Indicateurs d'erreur visuels**:
+   - Point rouge 🔴 pour numéros invalides ou emails manquants
+   - Panel d'erreurs récentes en haut de l'historique
+   - Message "⚠️ Certains contacts ont des informations manquantes"
+   
+5. ✅ **Historique des campagnes**:
+   - Tableau avec colonnes: Campagne, Contacts, Canaux, Statut, Date, Actions
+   - Statuts: Brouillon, Programmé, En cours, Envoyé
+   - Détails d'envoi expandables avec progression
+
+### Corrections techniques précédentes (13 Jan 2026)
+1. ✅ **Lecteur vidéo étanche 16:9**
+2. ✅ **Description du concept dynamique**
+3. ✅ **Favicon & Logo dynamique**
+4. ✅ **Codes promo robustes** (insensible à la casse, espaces, mise à jour temps réel)
 
 ### Tests
-- Backend: 23/23 tests passés (pytest)
+- Backend: 31/31 tests passés (pytest)
 - Frontend: Toutes les fonctionnalités vérifiées
+- Tests spécifiques campagnes: 8/8 passés
 
 ---
 
@@ -80,10 +108,11 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 │   ├── server.py       # FastAPI avec MongoDB
 │   ├── requirements.txt
 │   └── tests/
-│       └── test_afroboost_api.py
+│       ├── test_afroboost_api.py
+│       └── test_campaigns_api.py
 └── frontend/
     ├── src/
-    │   ├── App.js      # Composant React principal
+    │   ├── App.js      # Composant React principal (monolithique)
     │   └── App.css     # Styles néon
     └── public/
         ├── index.html  # PWA meta tags
@@ -91,33 +120,42 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 ```
 
 ### Data Models (MongoDB)
-- `courses`: id, name, weekday, time, locationName, mapsUrl
+- `courses`: id, name, weekday, time, locationName, mapsUrl, visible
 - `offers`: id, name, price, thumbnail, description, visible
 - `users`: id, name, email, whatsapp, createdAt
 - `reservations`: id, reservationCode, userId, userName, userEmail, courseId, ...
 - `discount_codes`: id, code, type, value, assignedEmail, courses, maxUses, used, active
-- `concept`: id, description, heroImageUrl, logoUrl
+- `concept`: id, description, heroImageUrl, logoUrl, faviconUrl
 - `payment_links`: id, stripe, paypal, twint, coachWhatsapp
+- `campaigns`: id, name, message, mediaUrl, mediaFormat, targetType, selectedContacts, channels, scheduledAt, status, results, createdAt
 
 ---
 
 ## Prioritized Backlog
 
 ### P0 - Completed ✅
-- [x] 6 améliorations demandées
+- [x] Module Gestionnaire de Campagnes complet
+- [x] Envoi WhatsApp avec aperçu média
+- [x] Programmation multi-dates
+- [x] Indicateurs d'erreur visuels
 
-### P1 - Future
-- [ ] Migration complète localStorage → MongoDB (déjà fait partiellement)
-- [ ] Refactoring App.js en composants modulaires
+### P1 - En attente
+- [ ] Migration vers vraie persistance MongoDB (actuellement données en mémoire perdues au redémarrage)
+- [ ] Refactoring App.js en composants modulaires (fichier > 2000 lignes)
 
 ### P2 - Backlog
+- [ ] Envoi Email via mailto: avec sujet personnalisé
+- [ ] Envoi Instagram via ig.me
 - [ ] Notifications email après réservation
-- [ ] Historique des réservations par utilisateur
 - [ ] Dashboard analytics pour le coach
-- [ ] Mode sombre/clair toggle
 
 ---
 
 ## Credentials
 - **Coach Login**: coach@afroboost.com / afroboost123
 - **Coach Access**: 3 clics rapides sur "© Afroboost 2026"
+
+---
+
+## Known Limitations
+⚠️ **DONNÉES NON PERSISTANTES**: Le backend utilise actuellement des listes en mémoire. Toutes les données sont perdues au redémarrage du serveur. La migration vers MongoDB est prioritaire pour la production.
