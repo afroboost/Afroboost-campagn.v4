@@ -781,10 +781,143 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
     }));
   };
 
+  // === CAMPAIGNS STATE & FUNCTIONS ===
+  const [campaigns, setCampaigns] = useState([]);
+  const [newCampaign, setNewCampaign] = useState({
+    name: "", message: "", mediaUrl: "", mediaFormat: "16:9",
+    targetType: "all", selectedContacts: [],
+    channels: { whatsapp: true, email: false, instagram: false },
+    scheduledAt: null, scheduledDate: "", scheduledTime: ""
+  });
+  const [selectedContactsForCampaign, setSelectedContactsForCampaign] = useState([]);
+  const [contactSearchQuery, setContactSearchQuery] = useState("");
+
+  // Load campaigns
+  useEffect(() => {
+    const loadCampaigns = async () => {
+      try {
+        const res = await axios.get(`${API}/campaigns`);
+        setCampaigns(res.data);
+      } catch (err) { console.error("Error loading campaigns:", err); }
+    };
+    if (tab === "campaigns") loadCampaigns();
+  }, [tab]);
+
+  // Get unique contacts from users and reservations
+  const allContacts = useMemo(() => {
+    const contactMap = new Map();
+    users.forEach(u => contactMap.set(u.email, { id: u.id, name: u.name, email: u.email, phone: u.whatsapp || "" }));
+    reservations.forEach(r => {
+      if (r.userEmail && !contactMap.has(r.userEmail)) {
+        contactMap.set(r.userEmail, { id: r.userId, name: r.userName, email: r.userEmail, phone: r.userWhatsapp || "" });
+      }
+    });
+    return Array.from(contactMap.values());
+  }, [users, reservations]);
+
+  // Filter contacts by search
+  const filteredContacts = useMemo(() => {
+    if (!contactSearchQuery) return allContacts;
+    const q = contactSearchQuery.toLowerCase();
+    return allContacts.filter(c => 
+      c.name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q)
+    );
+  }, [allContacts, contactSearchQuery]);
+
+  // Toggle contact selection
+  const toggleContactForCampaign = (contactId) => {
+    setSelectedContactsForCampaign(prev => 
+      prev.includes(contactId) ? prev.filter(id => id !== contactId) : [...prev, contactId]
+    );
+  };
+
+  // Select/Deselect all contacts
+  const toggleAllContacts = () => {
+    if (selectedContactsForCampaign.length === allContacts.length) {
+      setSelectedContactsForCampaign([]);
+    } else {
+      setSelectedContactsForCampaign(allContacts.map(c => c.id));
+    }
+  };
+
+  // Create campaign
+  const createCampaign = async (e) => {
+    e.preventDefault();
+    if (!newCampaign.name || !newCampaign.message) return;
+    
+    const scheduledAt = newCampaign.scheduledDate && newCampaign.scheduledTime 
+      ? `${newCampaign.scheduledDate}T${newCampaign.scheduledTime}:00` 
+      : null;
+    
+    const campaignData = {
+      name: newCampaign.name,
+      message: newCampaign.message,
+      mediaUrl: newCampaign.mediaUrl,
+      mediaFormat: newCampaign.mediaFormat,
+      targetType: newCampaign.targetType,
+      selectedContacts: newCampaign.targetType === "selected" ? selectedContactsForCampaign : [],
+      channels: newCampaign.channels,
+      scheduledAt
+    };
+    
+    try {
+      const res = await axios.post(`${API}/campaigns`, campaignData);
+      setCampaigns([res.data, ...campaigns]);
+      setNewCampaign({ name: "", message: "", mediaUrl: "", mediaFormat: "16:9", targetType: "all", selectedContacts: [], channels: { whatsapp: true, email: false, instagram: false }, scheduledAt: null, scheduledDate: "", scheduledTime: "" });
+      setSelectedContactsForCampaign([]);
+      alert("✅ Campagne créée avec succès !");
+    } catch (err) { console.error("Error creating campaign:", err); }
+  };
+
+  // Launch campaign (generate links)
+  const launchCampaign = async (campaignId) => {
+    try {
+      const res = await axios.post(`${API}/campaigns/${campaignId}/launch`);
+      setCampaigns(campaigns.map(c => c.id === campaignId ? res.data : c));
+      alert("🚀 Campagne lancée ! Cliquez sur les contacts pour ouvrir les liens.");
+    } catch (err) { console.error("Error launching campaign:", err); }
+  };
+
+  // Delete campaign
+  const deleteCampaign = async (campaignId) => {
+    if (!window.confirm("Supprimer cette campagne ?")) return;
+    try {
+      await axios.delete(`${API}/campaigns/${campaignId}`);
+      setCampaigns(campaigns.filter(c => c.id !== campaignId));
+    } catch (err) { console.error("Error deleting campaign:", err); }
+  };
+
+  // Generate WhatsApp link with message and image URL at the end
+  const generateWhatsAppLink = (phone, message, mediaUrl, contactName) => {
+    const firstName = contactName?.split(' ')[0] || contactName || '';
+    const personalizedMessage = message.replace(/{prénom}/gi, firstName).replace(/{prenom}/gi, firstName);
+    const fullMessage = mediaUrl ? `${personalizedMessage}\n\n👉 ${mediaUrl}` : personalizedMessage;
+    const cleanPhone = phone?.replace(/[^0-9+]/g, '') || '';
+    return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(fullMessage)}`;
+  };
+
+  // Generate mailto link for email
+  const generateEmailLink = (email, subject, message, mediaUrl, contactName) => {
+    const firstName = contactName?.split(' ')[0] || contactName || '';
+    const personalizedMessage = message.replace(/{prénom}/gi, firstName).replace(/{prenom}/gi, firstName);
+    const fullMessage = mediaUrl ? `${personalizedMessage}\n\n👉 ${mediaUrl}` : personalizedMessage;
+    return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullMessage)}`;
+  };
+
+  // Mark result as sent
+  const markResultSent = async (campaignId, contactId, channel) => {
+    try {
+      await axios.post(`${API}/campaigns/${campaignId}/mark-sent`, { contactId, channel });
+      const res = await axios.get(`${API}/campaigns/${campaignId}`);
+      setCampaigns(campaigns.map(c => c.id === campaignId ? res.data : c));
+    } catch (err) { console.error("Error marking sent:", err); }
+  };
+
   const tabs = [
     { id: "reservations", label: t('reservations') }, { id: "concept", label: t('conceptVisual') },
     { id: "courses", label: t('courses') }, { id: "offers", label: t('offers') },
-    { id: "payments", label: t('payments') }, { id: "codes", label: t('promoCodes') }
+    { id: "payments", label: t('payments') }, { id: "codes", label: t('promoCodes') },
+    { id: "campaigns", label: "📢 Campagnes" }
   ];
 
   return (
