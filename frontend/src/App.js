@@ -1373,7 +1373,15 @@ function App() {
     setPendingReservation(null); setSelectedCourse(null); setSelectedDate(null);
     setSelectedOffer(null); setSelectedSession(null); setUserName(""); 
     setUserEmail(""); setUserWhatsapp(""); setDiscountCode(""); 
-    setHasAcceptedTerms(false); setAppliedDiscount(null);
+    setHasAcceptedTerms(false); setAppliedDiscount(null); setPromoMessage({ type: '', text: '' });
+  };
+
+  // Reset form but keep client info (for repeat purchases)
+  const resetFormKeepClient = () => {
+    setPendingReservation(null); setSelectedCourse(null); setSelectedDate(null);
+    setSelectedOffer(null); setSelectedSession(null); setDiscountCode(""); 
+    setHasAcceptedTerms(false); setAppliedDiscount(null); setPromoMessage({ type: '', text: '' });
+    // Keep userName, userEmail, userWhatsapp for convenience
   };
 
   const sendWhatsAppNotification = (reservation, isCoach) => {
