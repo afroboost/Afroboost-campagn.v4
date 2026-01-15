@@ -196,6 +196,7 @@ class Concept(BaseModel):
     heroVideoUrl: str = ""
     logoUrl: str = ""
     faviconUrl: str = ""
+    termsText: str = ""  # CGV - Conditions Générales de Vente
 
 class ConceptUpdate(BaseModel):
     description: Optional[str] = None
@@ -203,6 +204,7 @@ class ConceptUpdate(BaseModel):
     heroVideoUrl: Optional[str] = None
     logoUrl: Optional[str] = None
     faviconUrl: Optional[str] = None
+    termsText: Optional[str] = None  # CGV - Conditions Générales de Vente
 
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
