@@ -16,6 +16,9 @@ export {
   useScrollIndicator
 } from './SearchBar';
 
+// === WIDGET CHAT IA ===
+export { ChatWidget } from './ChatWidget';
+
 // === CAMPAGNES ADMIN ===
 export { 
   useContactStats,
