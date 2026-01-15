@@ -2047,70 +2047,101 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
             <h2 className="font-semibold text-white mb-6" style={{ fontSize: '20px' }}>{t('offers')}</h2>
             {offers.map((offer, idx) => (
               <div key={offer.id} className="glass rounded-lg p-4 mb-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                  <div>
-                    <label className="block mb-1 text-white text-xs opacity-70">{t('offerName')}</label>
-                    <input type="text" value={offer.name} onChange={(e) => { const n = [...offers]; n[idx].name = e.target.value; setOffers(n); }}
-                      className="w-full px-3 py-2 rounded-lg neon-input text-sm" />
-                  </div>
-                  <div>
-                    <label className="block mb-1 text-white text-xs opacity-70">{t('price')}</label>
-                    <input type="number" value={offer.price} onChange={(e) => { const n = [...offers]; n[idx].price = parseFloat(e.target.value); setOffers(n); }}
-                      className="w-full px-3 py-2 rounded-lg neon-input text-sm" />
-                  </div>
-                  <div>
-                    <label className="block mb-1 text-white text-xs opacity-70">Images (max 5, séparées par virgule)</label>
-                    <input 
-                      type="text" 
-                      value={offer.images?.join(', ') || offer.thumbnail || ''} 
-                      onChange={(e) => { 
-                        const n = [...offers]; 
-                        const urls = e.target.value.split(',').map(u => u.trim()).filter(u => u).slice(0, 5);
-                        n[idx].images = urls;
-                        n[idx].thumbnail = urls[0] || '';
-                        setOffers(n); 
-                      }}
-                      className="w-full px-3 py-2 rounded-lg neon-input text-sm" 
-                      placeholder="URL1, URL2, URL3..." 
-                    />
-                  </div>
+                <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-3">
-                    <label className="text-white text-xs opacity-70">{t('visible')}</label>
-                    <div className={`switch ${offer.visible ? 'active' : ''}`} onClick={() => { const n = [...offers]; n[idx].visible = !offer.visible; setOffers(n); updateOffer({ ...offer, visible: !offer.visible }); }} />
+                    {offer.images?.[0] || offer.thumbnail ? (
+                      <img src={offer.images?.[0] || offer.thumbnail} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-purple-900/30 flex items-center justify-center text-2xl">🎧</div>
+                    )}
+                    <div>
+                      <h4 className="text-white font-semibold">{offer.name}</h4>
+                      <p className="text-purple-400 text-sm">{offer.price} CHF • {offer.images?.length || 0} images</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
                     <button 
-                      type="button"
-                      onClick={() => updateOffer(offer)}
-                      className="btn-primary px-3 py-1 rounded-lg text-xs ml-2"
-                      data-testid={`save-offer-${offer.id}`}
+                      onClick={() => startEditOffer(offer)}
+                      className="px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs"
+                      data-testid={`edit-offer-${offer.id}`}
                     >
-                      💾 Sauver
+                      ✏️ Modifier
                     </button>
+                    <button 
+                      onClick={() => deleteOffer(offer.id)}
+                      className="px-3 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs"
+                      data-testid={`delete-offer-${offer.id}`}
+                    >
+                      🗑️ Supprimer
+                    </button>
+                    <div className="flex items-center gap-2 ml-2">
+                      <span className="text-xs text-white opacity-60">{t('visible')}</span>
+                      <div className={`switch ${offer.visible ? 'active' : ''}`} onClick={() => { const n = [...offers]; n[idx].visible = !offer.visible; setOffers(n); updateOffer({ ...offer, visible: !offer.visible }); }} />
+                    </div>
                   </div>
                 </div>
-                {/* Description field for info tooltip */}
-                <div className="mt-3">
-                  <label className="block mb-1 text-white text-xs opacity-70">{t('offerDescription') || 'Description (icône "i")'}</label>
-                  <textarea 
-                    value={offer.description || ''} 
-                    onChange={(e) => { const n = [...offers]; n[idx].description = e.target.value; setOffers(n); }}
-                    className="w-full px-3 py-2 rounded-lg neon-input text-sm" 
-                    rows={2}
-                    maxLength={150}
-                    placeholder="Description visible au clic sur l'icône i (max 150 car.)"
-                    data-testid={`offer-description-${offer.id}`}
-                  />
-                  <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{(offer.description || '').length}/150 caractères</p>
-                </div>
+                {offer.description && (
+                  <p className="text-white/60 text-xs mt-2 italic">"{offer.description}"</p>
+                )}
               </div>
             ))}
-            <form onSubmit={addOffer} className="glass rounded-lg p-4 mt-4">
-              <h3 className="text-white mb-4 font-semibold text-sm">{t('addOffer')}</h3>
+            
+            {/* Formulaire Ajout/Modification */}
+            <form id="offer-form" onSubmit={addOffer} className="glass rounded-lg p-4 mt-4 border-2 border-purple-500/50">
+              <h3 className="text-white mb-4 font-semibold text-sm flex items-center gap-2">
+                {editingOfferId ? '✏️ Modifier l\'offre' : '➕ Ajouter une offre'}
+                {editingOfferId && (
+                  <button type="button" onClick={cancelEditOffer} className="ml-auto text-xs text-red-400 hover:text-red-300">
+                    ✕ Annuler
+                  </button>
+                )}
+              </h3>
               
               {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="text" placeholder={t('offerName')} value={newOffer.name} onChange={e => setNewOffer({ ...newOffer, name: e.target.value })} className="px-3 py-2 rounded-lg neon-input text-sm" required />
-                <input type="number" placeholder={t('price')} value={newOffer.price} onChange={e => setNewOffer({ ...newOffer, price: parseFloat(e.target.value) })} className="px-3 py-2 rounded-lg neon-input text-sm" />
-                <input type="text" placeholder="URLs images (max 5, séparées par virgule)" value={newOffer.thumbnail || ''} onChange={e => setNewOffer({ ...newOffer, thumbnail: e.target.value })} className="px-3 py-2 rounded-lg neon-input text-sm" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-white opacity-60 mb-1 block">Nom de l'offre *</label>
+                  <input type="text" placeholder="Ex: Cours à l'unité" value={newOffer.name} onChange={e => setNewOffer({ ...newOffer, name: e.target.value })} className="w-full px-3 py-2 rounded-lg neon-input text-sm" required />
+                </div>
+                <div>
+                  <label className="text-xs text-white opacity-60 mb-1 block">Prix (CHF)</label>
+                  <input type="number" placeholder="30" value={newOffer.price} onChange={e => setNewOffer({ ...newOffer, price: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg neon-input text-sm" />
+                </div>
+              </div>
+              
+              {/* 5 Champs d'images */}
+              <div className="mt-4">
+                <label className="text-xs text-white opacity-60 mb-2 block">📷 Images (max 5 URLs)</label>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                  {[0, 1, 2, 3, 4].map(i => (
+                    <input 
+                      key={i}
+                      type="url" 
+                      placeholder={`Image ${i + 1}`}
+                      value={newOffer.images?.[i] || ''} 
+                      onChange={e => {
+                        const newImages = [...(newOffer.images || ["", "", "", "", ""])];
+                        newImages[i] = e.target.value;
+                        setNewOffer({ ...newOffer, images: newImages });
+                      }}
+                      className="w-full px-3 py-2 rounded-lg neon-input text-xs"
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              {/* Description */}
+              <div className="mt-4">
+                <label className="text-xs text-white opacity-60 mb-1 block">Description (icône "i")</label>
+                <textarea 
+                  value={newOffer.description || ''} 
+                  onChange={e => setNewOffer({ ...newOffer, description: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg neon-input text-sm" 
+                  rows={2}
+                  maxLength={150}
+                  placeholder="Description visible au clic sur l'icône i (max 150 car.)"
+                />
+                <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{(newOffer.description || '').length}/150</p>
               </div>
               
               {/* Category & Type */}
@@ -2133,6 +2164,14 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
                     onChange={e => setNewOffer({ ...newOffer, isProduct: e.target.checked })} 
                   />
                   Produit physique (expédition)
+                </label>
+                <label className="flex items-center gap-2 text-white text-sm">
+                  <input 
+                    type="checkbox" 
+                    checked={newOffer.visible} 
+                    onChange={e => setNewOffer({ ...newOffer, visible: e.target.checked })} 
+                  />
+                  Visible
                 </label>
               </div>
               
