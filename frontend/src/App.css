@@ -170,6 +170,11 @@ html, body {
     inset 0 0 30px rgba(217, 28, 210, 0.08);
 }
 
+/* =================================================================
+   OFFERS SLIDER STYLES - Swipe Mobile
+   Compatible: iOS Safari, Android Chrome
+   ================================================================= */
+
 /* Offer Cards - Clean Design */
 /* Conteneur parent des offres - SWIPE FLUIDE iPhone/Android */
 .offers-container, .offers-slider {
@@ -187,6 +192,10 @@ html, body {
   scrollbar-width: thin; /* Firefox */
 }
 
+/* =================================================================
+   QR SCANNER STYLES
+   ================================================================= */
+
 /* QR Scanner Container - VISIBLE */
 #qr-reader, #reader {
   display: block !important;
@@ -194,6 +203,10 @@ html, body {
   min-height: 300px;
   background: #000;
 }
+
+/* =================================================================
+   OFFER CARD STYLES - Avec multi-images
+   ================================================================= */
 
 /* Offer Card - SWIPE CARDS 85% width */
 .offer-card {
