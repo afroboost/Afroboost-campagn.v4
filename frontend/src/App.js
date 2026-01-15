@@ -1793,6 +1793,14 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
   const [bulkSendingProgress, setBulkSendingProgress] = useState(null); // {channel, current, total, name}
   const [bulkSendingResults, setBulkSendingResults] = useState(null); // {email: {sent, failed}, whatsapp: {sent, failed}}
 
+  // === IA WHATSAPP STATE ===
+  const [aiConfig, setAiConfig] = useState({ enabled: false, systemPrompt: '', model: 'gpt-4o-mini', provider: 'openai', lastMediaUrl: '' });
+  const [showAIConfig, setShowAIConfig] = useState(false);
+  const [aiLogs, setAiLogs] = useState([]);
+  const [aiTestMessage, setAiTestMessage] = useState('');
+  const [aiTestResponse, setAiTestResponse] = useState(null);
+  const [aiTestLoading, setAiTestLoading] = useState(false);
+
   // Add schedule slot
   const addScheduleSlot = () => {
     const now = new Date();
