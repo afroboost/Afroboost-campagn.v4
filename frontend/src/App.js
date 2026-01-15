@@ -22,7 +22,9 @@ import {
 } from "./services/aiResponseService";
 import { 
   NavigationBar, 
-  LandingSectionSelector 
+  LandingSectionSelector,
+  ScrollIndicator,
+  useScrollIndicator
 } from "./components/SearchBar";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
