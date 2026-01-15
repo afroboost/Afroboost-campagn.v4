@@ -2367,6 +2367,79 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
     setBulkSendingProgress(null);
     setBulkSendingInProgress(false);
     setBulkSendingResults(results);
+    
+    // Mettre à jour le dernier média envoyé pour l'IA
+    if (newCampaign.mediaUrl) {
+      setLastMediaUrlService(newCampaign.mediaUrl);
+      // Aussi mettre à jour côté backend
+      axios.put(`${API}/ai-config`, { lastMediaUrl: newCampaign.mediaUrl }).catch(() => {});
+    }
+  };
+
+  // === IA WHATSAPP FUNCTIONS ===
+  
+  // Charger la config IA depuis le backend
+  const loadAIConfig = async () => {
+    try {
+      const res = await axios.get(`${API}/ai-config`);
+      setAiConfig(res.data);
+    } catch (err) {
+      console.error("Error loading AI config:", err);
+    }
+  };
+
+  // Charger les logs IA
+  const loadAILogs = async () => {
+    try {
+      const res = await axios.get(`${API}/ai-logs`);
+      setAiLogs(res.data || []);
+    } catch (err) {
+      console.error("Error loading AI logs:", err);
+    }
+  };
+
+  // Sauvegarder la config IA
+  const handleSaveAIConfig = async () => {
+    try {
+      await axios.put(`${API}/ai-config`, aiConfig);
+      alert('✅ Configuration IA sauvegardée !');
+    } catch (err) {
+      alert('❌ Erreur lors de la sauvegarde');
+    }
+  };
+
+  // Tester l'IA
+  const handleTestAI = async () => {
+    if (!aiTestMessage.trim()) {
+      alert('Veuillez entrer un message de test');
+      return;
+    }
+    
+    setAiTestLoading(true);
+    setAiTestResponse(null);
+    
+    try {
+      const res = await axios.post(`${API}/ai-test`, {
+        message: aiTestMessage,
+        clientName: 'Test User'
+      });
+      setAiTestResponse(res.data);
+    } catch (err) {
+      setAiTestResponse({ success: false, error: err.response?.data?.detail || err.message });
+    }
+    
+    setAiTestLoading(false);
+  };
+
+  // Effacer les logs IA
+  const handleClearAILogs = async () => {
+    if (!window.confirm('Effacer tous les logs IA ?')) return;
+    try {
+      await axios.delete(`${API}/ai-logs`);
+      setAiLogs([]);
+    } catch (err) {
+      console.error("Error clearing AI logs:", err);
+    }
   };
 
   // Stats des contacts pour envoi - calcul direct sans fonction
