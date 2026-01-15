@@ -249,9 +249,9 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 - [x] Gestionnaire de Campagnes opérationnel (Email BCC, WhatsApp nav, Instagram DM)
 
 ### P1 - À faire
-- [ ] Refactoring App.js en composants modulaires (fichier > 3000 lignes)
+- [ ] Continuer refactoring: Extraire CoachDashboard, CoachLoginModal dans composants séparés
 - [ ] Migration vers vraie persistance MongoDB (actuellement données en mémoire)
-- [ ] Amélioration Scanner QR (tests sur vrais appareils)
+- [ ] Tests automatisés pour les composants extraits
 
 ### P2 - Backlog
 - [ ] Créer pages dédiées: /boutique, /profil (routing Vercel)
