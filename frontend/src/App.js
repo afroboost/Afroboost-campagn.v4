@@ -775,15 +775,15 @@ const OfferCardSlider = ({ offer, selected, onClick }) => {
           }}
           data-testid={`offer-card-${offer.id}`}
         >
-          {/* Image Section - Points discrets uniquement */}
-          <div style={{ position: 'relative', height: '180px', overflow: 'hidden' }}>
+          {/* Image Section - 250px HEIGHT */}
+          <div style={{ position: 'relative', height: '250px', overflow: 'hidden' }}>
             {!showDescription ? (
               <>
                 <img 
                   src={currentImage} 
                   alt={offer.name} 
                   className="w-full h-full"
-                  style={{ objectFit: 'cover', objectPosition: 'center' }}
+                  style={{ objectFit: 'cover', objectPosition: 'center', height: '250px' }}
                   onError={(e) => { e.target.src = defaultImage; }}
                 />
                 
