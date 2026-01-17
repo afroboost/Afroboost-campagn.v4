@@ -495,6 +495,65 @@ async def delete_reservation(reservation_id: str):
     await db.reservations.delete_one({"id": reservation_id})
     return {"success": True}
 
+# ==================== COACH NOTIFICATIONS ====================
+
+class CoachNotificationPayload(BaseModel):
+    """Payload for coach notification"""
+    clientName: str
+    clientEmail: str
+    clientWhatsapp: str
+    offerName: str
+    courseName: str
+    sessionDate: str
+    amount: float
+    reservationCode: str
+
+@api_router.post("/notify-coach")
+async def notify_coach(payload: CoachNotificationPayload):
+    """
+    Endpoint to trigger coach notification.
+    Returns the notification config so frontend can send via EmailJS/WhatsApp.
+    """
+    try:
+        # Get payment links config which contains coach notification settings
+        payment_links = await db.payment_links.find_one({"id": "payment_links"}, {"_id": 0})
+        if not payment_links:
+            return {"success": False, "message": "Configuration non trouvée"}
+        
+        coach_email = payment_links.get("coachNotificationEmail", "")
+        coach_phone = payment_links.get("coachNotificationPhone", "")
+        
+        if not coach_email and not coach_phone:
+            return {"success": False, "message": "Aucune adresse de notification configurée"}
+        
+        # Format notification message
+        notification_message = f"""🎉 NOUVELLE RÉSERVATION !
+
+👤 Client: {payload.clientName}
+📧 Email: {payload.clientEmail}
+📱 WhatsApp: {payload.clientWhatsapp}
+
+🎯 Offre: {payload.offerName}
+📅 Cours: {payload.courseName}
+🕐 Date: {payload.sessionDate}
+💰 Montant: {payload.amount} CHF
+
+🔑 Code: {payload.reservationCode}
+
+---
+Notification automatique Afroboost"""
+
+        return {
+            "success": True,
+            "coachEmail": coach_email,
+            "coachPhone": coach_phone,
+            "message": notification_message,
+            "subject": f"🎉 Nouvelle réservation - {payload.clientName}"
+        }
+    except Exception as e:
+        logger.error(f"Error in notify-coach: {e}")
+        return {"success": False, "message": str(e)}
+
 # --- Discount Codes ---
 @api_router.get("/discount-codes", response_model=List[DiscountCode])
 async def get_discount_codes():
