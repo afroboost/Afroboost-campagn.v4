@@ -3583,19 +3583,70 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
 
         {/* Promo Codes Tab with Beneficiary Dropdown */}
         {tab === "codes" && (
-          <div className="card-gradient rounded-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="font-semibold text-white" style={{ fontSize: '20px' }}>{t('promoCodes')}</h2>
-              <div>
+          <div className="card-gradient rounded-xl p-4 sm:p-6">
+            <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
+              <h2 className="font-semibold text-white text-lg sm:text-xl">{t('promoCodes')}</h2>
+              <div className="flex gap-2 flex-wrap">
+                {/* Add Manual Contact Button */}
+                <button 
+                  type="button"
+                  onClick={() => setShowManualContactForm(!showManualContactForm)} 
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-white text-xs sm:text-sm transition-all"
+                  style={{ 
+                    background: showManualContactForm ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                    border: showManualContactForm ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(34, 197, 94, 0.4)'
+                  }}
+                  data-testid="add-manual-contact-btn"
+                >
+                  {showManualContactForm ? '✕ Fermer' : t('addManualContact')}
+                </button>
                 <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCSV} style={{ display: 'none' }} />
-                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 rounded-lg glass text-white text-sm" data-testid="import-csv-btn">
+                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-3 py-2 rounded-lg glass text-white text-xs sm:text-sm" data-testid="import-csv-btn">
                   <FolderIcon /> {t('importCSV')}
                 </button>
               </div>
             </div>
             
+            {/* Manual Contact Form */}
+            {showManualContactForm && (
+              <form onSubmit={addManualContact} className="mb-6 p-4 rounded-lg border border-green-500/30" style={{ background: 'rgba(34, 197, 94, 0.1)' }}>
+                <h3 className="text-white font-semibold mb-3 text-sm">👤 Ajouter un nouveau contact</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                  <input 
+                    type="text" 
+                    placeholder={t('manualContactName')} 
+                    value={manualContact.name} 
+                    onChange={e => setManualContact({ ...manualContact, name: e.target.value })}
+                    className="px-3 py-2 rounded-lg neon-input text-sm" 
+                    required
+                    data-testid="manual-contact-name"
+                  />
+                  <input 
+                    type="email" 
+                    placeholder={t('manualContactEmail')} 
+                    value={manualContact.email} 
+                    onChange={e => setManualContact({ ...manualContact, email: e.target.value })}
+                    className="px-3 py-2 rounded-lg neon-input text-sm" 
+                    required
+                    data-testid="manual-contact-email"
+                  />
+                  <input 
+                    type="tel" 
+                    placeholder={t('manualContactWhatsapp')} 
+                    value={manualContact.whatsapp} 
+                    onChange={e => setManualContact({ ...manualContact, whatsapp: e.target.value })}
+                    className="px-3 py-2 rounded-lg neon-input text-sm"
+                    data-testid="manual-contact-whatsapp"
+                  />
+                </div>
+                <button type="submit" className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: 'rgba(34, 197, 94, 0.6)' }} data-testid="submit-manual-contact">
+                  ✓ Ajouter le contact
+                </button>
+              </form>
+            )}
+            
             <form onSubmit={addCode} className="mb-6 p-4 rounded-lg glass">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <input type="text" placeholder={t('codePromo')} value={newCode.code} onChange={e => setNewCode({ ...newCode, code: e.target.value })}
                   className="px-3 py-2 rounded-lg neon-input text-sm" data-testid="new-code-name" />
                 <select value={newCode.type} onChange={e => setNewCode({ ...newCode, type: e.target.value })} className="px-3 py-2 rounded-lg neon-input text-sm" data-testid="new-code-type">
