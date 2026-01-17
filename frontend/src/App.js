@@ -3013,36 +3013,34 @@ function App() {
           </div>
         )}
 
-        {/* Section Sessions */}
-        <div id="sessions-section" className="mb-8">
-          {visibleCourses.length > 0 && (
-            <>
-              <h2 className="font-semibold mb-4 text-white" style={{ fontSize: '18px' }}>{t('chooseSession')}</h2>
-              {/* Container avec scroll pour mobile - scrollbar rose fine 4px */}
-              <div 
-                className="space-y-4 sessions-scrollbar" 
-                style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}
-              >
-                {visibleCourses.map(course => (
-                  <div key={course.id} className={`course-card rounded-xl p-5 ${selectedCourse?.id === course.id ? 'selected' : ''}`} data-testid={`course-card-${course.id}`}>
-                    <h3 className="font-semibold text-white">{course.name}</h3>
-                    <div className="flex items-center gap-2 text-xs text-white opacity-60 mb-1">
-                      <LocationIcon />
-                      <span>{course.locationName}</span>
-                      {course.mapsUrl && (
-                        <a href={course.mapsUrl} target="_blank" rel="noopener noreferrer" className="ml-2 flex items-center gap-1" style={{ color: '#8b5cf6' }}
-                          onClick={(e) => e.stopPropagation()}>
-                          <LocationIcon /> Maps
-                        </a>
-                      )}
-                    </div>
-                    {renderDates(course)}
+        {/* Section Sessions - Masquée si filtre Shop actif */}
+        {activeFilter !== 'shop' && visibleCourses.length > 0 && (
+          <div id="sessions-section" className="mb-8">
+            <h2 className="font-semibold mb-4 text-white" style={{ fontSize: '18px' }}>{t('chooseSession')}</h2>
+            {/* Container avec scroll pour mobile - scrollbar rose fine 4px */}
+            <div 
+              className="space-y-4 sessions-scrollbar" 
+              style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}
+            >
+              {visibleCourses.map(course => (
+                <div key={course.id} className={`course-card rounded-xl p-5 ${selectedCourse?.id === course.id ? 'selected' : ''}`} data-testid={`course-card-${course.id}`}>
+                  <h3 className="font-semibold text-white">{course.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-white opacity-60 mb-1">
+                    <LocationIcon />
+                    <span>{course.locationName}</span>
+                    {course.mapsUrl && (
+                      <a href={course.mapsUrl} target="_blank" rel="noopener noreferrer" className="ml-2 flex items-center gap-1" style={{ color: '#8b5cf6' }}
+                        onClick={(e) => e.stopPropagation()}>
+                        <LocationIcon /> Maps
+                      </a>
+                    )}
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+                  {renderDates(course)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* =====================================================
             SECTION OFFRES/SERVICES - Affichée si cours + date sélectionnés
