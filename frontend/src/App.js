@@ -3536,19 +3536,21 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
                   <option value="supplement">💊 Complément</option>
                   <option value="accessory">🎒 Accessoire</option>
                 </select>
-                <label className="flex items-center gap-2 text-white text-sm">
+                <label className="flex items-center gap-2 text-white text-sm py-2">
                   <input 
                     type="checkbox" 
                     checked={newOffer.isProduct} 
                     onChange={e => setNewOffer({ ...newOffer, isProduct: e.target.checked })} 
+                    className="w-5 h-5"
                   />
-                  Produit physique (expédition)
+                  Produit physique
                 </label>
-                <label className="flex items-center gap-2 text-white text-sm">
+                <label className="flex items-center gap-2 text-white text-sm py-2">
                   <input 
                     type="checkbox" 
                     checked={newOffer.visible} 
                     onChange={e => setNewOffer({ ...newOffer, visible: e.target.checked })} 
+                    className="w-5 h-5"
                   />
                   Visible
                 </label>
@@ -3558,25 +3560,25 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
               {newOffer.isProduct && (
                 <div className="mt-3 p-3 rounded-lg border border-purple-500/30">
                   <p className="text-xs text-purple-400 mb-3">📦 Paramètres produit</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs text-white opacity-60">TVA (%)</label>
-                      <input type="number" placeholder="7.7" value={newOffer.tva || ''} onChange={e => setNewOffer({ ...newOffer, tva: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg neon-input text-sm" step="0.1" />
+                      <input type="number" placeholder="7.7" value={newOffer.tva || ''} onChange={e => setNewOffer({ ...newOffer, tva: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-3 rounded-lg neon-input text-sm" step="0.1" />
                     </div>
                     <div>
-                      <label className="text-xs text-white opacity-60">Frais port (CHF)</label>
-                      <input type="number" placeholder="9.90" value={newOffer.shippingCost || ''} onChange={e => setNewOffer({ ...newOffer, shippingCost: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg neon-input text-sm" step="0.1" />
+                      <label className="text-xs text-white opacity-60">Frais port</label>
+                      <input type="number" placeholder="9.90" value={newOffer.shippingCost || ''} onChange={e => setNewOffer({ ...newOffer, shippingCost: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-3 rounded-lg neon-input text-sm" step="0.1" />
                     </div>
                     <div>
-                      <label className="text-xs text-white opacity-60">Stock (-1=illimité)</label>
-                      <input type="number" placeholder="-1" value={newOffer.stock} onChange={e => setNewOffer({ ...newOffer, stock: parseInt(e.target.value) || -1 })} className="w-full px-3 py-2 rounded-lg neon-input text-sm" />
+                      <label className="text-xs text-white opacity-60">Stock</label>
+                      <input type="number" placeholder="-1" value={newOffer.stock} onChange={e => setNewOffer({ ...newOffer, stock: parseInt(e.target.value) || -1 })} className="w-full px-3 py-3 rounded-lg neon-input text-sm" />
                     </div>
                   </div>
                   
                   {/* Variants */}
                   <div className="mt-3">
                     <label className="text-xs text-white opacity-60">Variantes (séparées par virgule)</label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
                       <input 
                         type="text" 
                         placeholder="Tailles: S, M, L, XL"
@@ -3584,16 +3586,16 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
                           ...newOffer, 
                           variants: { ...newOffer.variants, sizes: e.target.value.split(',').map(s => s.trim()).filter(s => s) }
                         })}
-                        className="px-3 py-2 rounded-lg neon-input text-sm"
+                        className="w-full px-3 py-3 rounded-lg neon-input text-sm"
                       />
                       <input 
                         type="text" 
-                        placeholder="Couleurs: Noir, Blanc, Rose"
+                        placeholder="Couleurs: Noir, Blanc"
                         onChange={e => setNewOffer({ 
                           ...newOffer, 
                           variants: { ...newOffer.variants, colors: e.target.value.split(',').map(s => s.trim()).filter(s => s) }
                         })}
-                        className="px-3 py-2 rounded-lg neon-input text-sm"
+                        className="w-full px-3 py-3 rounded-lg neon-input text-sm"
                       />
                       <input 
                         type="text" 
@@ -3602,7 +3604,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
                           ...newOffer, 
                           variants: { ...newOffer.variants, weights: e.target.value.split(',').map(s => s.trim()).filter(s => s) }
                         })}
-                        className="px-3 py-2 rounded-lg neon-input text-sm"
+                        className="w-full px-3 py-3 rounded-lg neon-input text-sm"
                       />
                     </div>
                   </div>
