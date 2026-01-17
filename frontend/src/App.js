@@ -953,7 +953,7 @@ const OfferCardSlider = ({ offer, selected, onClick }) => {
           className={`offer-card-slider rounded-xl overflow-visible cursor-pointer transition-all duration-300`}
           style={{
             boxShadow: selected 
-              ? '0 0 0 3px #d91cd2, 0 0 30px #d91cd2, 0 0 60px rgba(217, 28, 210, 0.5)' 
+              ? '0 0 0 3px #d91cd2, 0 0 10px rgba(217, 28, 210, 0.4)' 
               : '0 4px 20px rgba(0,0,0,0.4)',
             border: 'none',
             transform: selected ? 'scale(1.02)' : 'scale(1)',
