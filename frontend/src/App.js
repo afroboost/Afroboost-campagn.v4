@@ -504,8 +504,11 @@ const LanguageSelector = ({ lang, setLang }) => {
 };
 
 // Media Display Component (YouTube, Vimeo, Image, Video) - Clean display without dark overlays
+// Media Display Component with Sound Control
 const MediaDisplay = ({ url, className }) => {
   const [hasError, setHasError] = useState(false);
+  const [isMuted, setIsMuted] = useState(false); // Son activé par défaut
+  const videoRef = useRef(null);
   const media = parseMediaUrl(url);
   
   // Placeholder Afroboost par défaut
@@ -513,6 +516,14 @@ const MediaDisplay = ({ url, className }) => {
   
   // Return null if no valid media URL
   if (!media || !url || url.trim() === '') return null;
+
+  // Toggle mute for video element
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+    }
+  };
 
   // 16:9 container wrapper - Clean without dark filters
   const containerStyle = {
@@ -534,13 +545,33 @@ const MediaDisplay = ({ url, className }) => {
     height: '100%'
   };
 
+  // Mute button style
+  const muteButtonStyle = {
+    position: 'absolute',
+    bottom: '12px',
+    right: '12px',
+    zIndex: 20,
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    background: 'rgba(0, 0, 0, 0.7)',
+    border: '1px solid rgba(217, 28, 210, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    color: '#fff',
+    fontSize: '18px'
+  };
+
   // Transparent overlay to prevent clicks without hiding content
   const clickBlockerStyle = {
     position: 'absolute',
     top: 0,
     left: 0,
     width: '100%',
-    height: '100%',
+    height: 'calc(100% - 60px)', // Leave space for mute button
     zIndex: 10,
     cursor: 'default',
     background: 'transparent',
@@ -574,36 +605,52 @@ const MediaDisplay = ({ url, className }) => {
   }
 
   if (media.type === 'youtube') {
-    // YouTube embed - NO dark overlays, just click blocker
+    // YouTube embed - with mute control via URL parameter
+    const muteParam = isMuted ? '1' : '0';
     return (
       <div className={className} style={containerStyle} data-testid="media-container-16-9">
         <iframe 
-          src={`https://www.youtube.com/embed/${media.id}?autoplay=1&mute=1&loop=1&playlist=${media.id}&modestbranding=1&rel=0&showinfo=0&controls=0&disablekb=1&fs=0&iv_load_policy=3`}
+          src={`https://www.youtube.com/embed/${media.id}?autoplay=1&mute=${muteParam}&loop=1&playlist=${media.id}&modestbranding=1&rel=0&showinfo=0&controls=0&disablekb=1&fs=0&iv_load_policy=3`}
           frameBorder="0" 
           allow="autoplay; encrypted-media" 
           style={contentStyle}
           title="YouTube video"
           onError={() => setHasError(true)}
         />
-        {/* Only transparent click blocker - NO dark gradients */}
         <div style={clickBlockerStyle} onClick={(e) => e.preventDefault()} />
+        <button 
+          onClick={toggleMute} 
+          style={muteButtonStyle}
+          title={isMuted ? 'Activer le son' : 'Couper le son'}
+          data-testid="mute-btn"
+        >
+          {isMuted ? '🔇' : '🔊'}
+        </button>
       </div>
     );
   }
   
   if (media.type === 'vimeo') {
+    const mutedParam = isMuted ? '1' : '0';
     return (
       <div className={className} style={containerStyle} data-testid="media-container-16-9">
         <iframe 
-          src={`https://player.vimeo.com/video/${media.id}?autoplay=1&muted=1&loop=1&background=1&title=0&byline=0&portrait=0`}
+          src={`https://player.vimeo.com/video/${media.id}?autoplay=1&muted=${mutedParam}&loop=1&background=1&title=0&byline=0&portrait=0`}
           frameBorder="0" 
           allow="autoplay" 
           style={contentStyle}
           title="Vimeo video"
           onError={() => setHasError(true)}
         />
-        {/* Only transparent click blocker */}
         <div style={clickBlockerStyle} onClick={(e) => e.preventDefault()} />
+        <button 
+          onClick={toggleMute} 
+          style={muteButtonStyle}
+          title={isMuted ? 'Activer le son' : 'Couper le son'}
+          data-testid="mute-btn"
+        >
+          {isMuted ? '🔇' : '🔊'}
+        </button>
       </div>
     );
   }
@@ -612,14 +659,23 @@ const MediaDisplay = ({ url, className }) => {
     return (
       <div className={className} style={containerStyle} data-testid="media-container-16-9">
         <video 
+          ref={videoRef}
           src={media.url} 
           autoPlay 
           loop 
-          muted 
+          muted={isMuted}
           playsInline 
           style={{ ...contentStyle, objectFit: 'cover' }}
           onError={() => setHasError(true)}
         />
+        <button 
+          onClick={toggleMute} 
+          style={muteButtonStyle}
+          title={isMuted ? 'Activer le son' : 'Couper le son'}
+          data-testid="mute-btn"
+        >
+          {isMuted ? '🔇' : '🔊'}
+        </button>
       </div>
     );
   }
