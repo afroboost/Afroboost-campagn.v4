@@ -2761,7 +2761,16 @@ function App() {
   if (coachMode) return <CoachDashboard t={t} lang={lang} onBack={() => setCoachMode(false)} onLogout={() => setCoachMode(false)} />;
 
   // Filtrer les offres et cours selon visibilité, filtre actif et recherche
-  const baseOffers = offers.filter(o => o.visible !== false);
+  // SÉPARATION VISIBILITÉ : Les produits physiques sont TOUJOURS visibles
+  // La visibilité des cours n'impacte PAS les produits
+  const baseOffers = offers.filter(o => {
+    // Les produits physiques sont toujours visibles (sauf si explicitement masqués)
+    if (o.isProduct === true) return o.visible !== false;
+    // Les offres/services suivent leur propre visibilité
+    return o.visible !== false;
+  });
+  
+  // Les cours ont leur propre visibilité indépendante
   const baseCourses = courses.filter(c => c.visible !== false);
   
   // Fonction de recherche floue (fuzzy search)
