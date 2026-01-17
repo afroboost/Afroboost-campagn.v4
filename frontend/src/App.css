@@ -16,21 +16,21 @@
 /* Custom scrollbar for admin panels */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(139, 92, 246, 0.5) rgba(0, 0, 0, 0.2);
+  scrollbar-color: #D91CD2 rgba(0, 0, 0, 0.2);
 }
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
+  border-radius: 2px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.5);
-  border-radius: 3px;
+  background: #D91CD2;
+  border-radius: 2px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.7);
+  background: #e84de0;
 }
 
 html, body {
