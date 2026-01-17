@@ -2624,7 +2624,11 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedCourse || !selectedDate || !selectedOffer || !hasAcceptedTerms) return;
+    
+    // Pour les produits physiques, pas besoin de cours/date
+    const isPhysicalProduct = selectedOffer?.isProduct || selectedOffer?.isPhysicalProduct;
+    if (!isPhysicalProduct && (!selectedCourse || !selectedDate)) return;
+    if (!selectedOffer || !hasAcceptedTerms) return;
 
     // Direct validation - private fields only
     if (!userEmail?.trim() || !userWhatsapp?.trim()) {
@@ -2632,22 +2636,54 @@ function App() {
       setTimeout(() => setValidationMessage(""), 4000);
       return;
     }
+    
+    // Validation des variantes si le produit en a
+    if (selectedOffer?.variants && Object.keys(selectedOffer.variants).length > 0) {
+      const missingVariants = [];
+      if (selectedOffer.variants.sizes?.length > 0 && !selectedVariants.size) {
+        missingVariants.push('taille');
+      }
+      if (selectedOffer.variants.colors?.length > 0 && !selectedVariants.color) {
+        missingVariants.push('couleur');
+      }
+      if (selectedOffer.variants.weights?.length > 0 && !selectedVariants.weight) {
+        missingVariants.push('poids');
+      }
+      
+      if (missingVariants.length > 0) {
+        setValidationMessage(`Veuillez sélectionner: ${missingVariants.join(', ')}`);
+        setTimeout(() => setValidationMessage(""), 4000);
+        return;
+      }
+    }
 
-    const [h, m] = selectedCourse.time.split(':');
-    const dt = new Date(selectedDate);
-    dt.setHours(parseInt(h), parseInt(m), 0, 0);
+    // Calcul de la date pour les services (cours)
+    let dt = new Date();
+    if (selectedCourse && selectedDate) {
+      const [h, m] = selectedCourse.time.split(':');
+      dt = new Date(selectedDate);
+      dt.setHours(parseInt(h), parseInt(m), 0, 0);
+    }
 
     const totalPrice = parseFloat(calculateTotal());
+    
+    // Formatter les variantes sélectionnées pour l'affichage
+    const variantsText = Object.entries(selectedVariants)
+      .filter(([_, v]) => v)
+      .map(([k, v]) => `${k === 'size' ? 'Taille' : k === 'color' ? 'Couleur' : 'Poids'}: ${v}`)
+      .join(', ');
 
     const reservation = {
       userId: `user-${Date.now()}`,
       userName: userName,
       userEmail: userEmail, 
       userWhatsapp: userWhatsapp,
-      shippingAddress: selectedOffer?.isProduct ? shippingAddress : null, // Adresse si produit physique
-      courseId: selectedCourse.id, 
-      courseName: selectedCourse.name,
-      courseTime: selectedCourse.time, 
+      shippingAddress: isPhysicalProduct ? shippingAddress : null, // Adresse si produit physique
+      selectedVariants: Object.keys(selectedVariants).length > 0 ? selectedVariants : null, // Variantes choisies
+      variantsText: variantsText || null, // Texte formaté des variantes
+      courseId: selectedCourse?.id || 'N/A', 
+      courseName: selectedCourse?.name || 'Produit physique',
+      courseTime: selectedCourse?.time || '', 
       datetime: dt.toISOString(),
       offerId: selectedOffer.id, 
       offerName: selectedOffer.name,
@@ -2658,7 +2694,7 @@ function App() {
       discountType: appliedDiscount?.type || null,
       discountValue: appliedDiscount?.value || null,
       appliedDiscount,
-      isProduct: selectedOffer?.isProduct || false
+      isProduct: isPhysicalProduct
     };
 
     // DYNAMISME DU BOUTON: Si total = 0 (100% gratuit), réservation directe sans paiement
