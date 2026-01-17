@@ -465,6 +465,12 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - **URL du Logo** : Champ pour configurer le logo (Splash Screen & PWA)
   - **Persistance MongoDB** : Champ `appName` ajouté au modèle Concept
   - **Dynamique** : Le titre du site utilise `concept.appName` au lieu de la traduction
+- [x] **Fix Régression Visibilité Offres (17 Jan 2026)**:
+  - **Bug critique** : Les offres avec `visible=false` s'affichaient toujours
+  - **Correction** : Changement de `visible !== false` en `visible === true` (égalité stricte)
+  - **Impact** : Offres, produits et cours décochés dans l'admin sont maintenant correctement masqués
+  - **Manifest PWA dynamique** : `/api/manifest.json` utilise `appName` et `logoUrl` du concept
+  - **Tests** : 15/15 tests backend pytest + 11/11 tests frontend passés
 
 ### P1 - À faire
 - [x] ~~**CRITICAL: Refactoring de App.js**~~ - ✅ COMPLÉTÉ - App.js réduit de 52%
