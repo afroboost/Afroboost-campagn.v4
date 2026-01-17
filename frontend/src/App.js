@@ -4738,33 +4738,37 @@ const SuccessOverlay = ({ t, data, onClose }) => {
         </div>
         
         {/* Action buttons - outside capture zone */}
-        <div className="mt-4 space-y-2">
-          {/* Primary action: Save ticket as image */}
-          <button 
-            onClick={handleSaveTicket} 
-            disabled={isGenerating}
-            className="w-full p-3 rounded-lg font-semibold text-white transition-all"
-            style={{ 
-              background: 'linear-gradient(135deg, #d91cd2 0%, #8b5cf6 100%)',
-              boxShadow: '0 0 20px rgba(217, 28, 210, 0.4)'
-            }}
-            data-testid="save-ticket-btn"
-          >
-            {isGenerating ? t('generatingImage') : t('saveTicket')}
-          </button>
-          
-          {/* Secondary actions row */}
+        <div className="mt-4 space-y-3">
+          {/* Primary row: Save + Share WhatsApp side by side */}
           <div className="flex gap-2">
-            <button onClick={handlePrint} className="flex-1 p-2 glass rounded-lg text-white text-sm">{t('print')}</button>
             <button 
-              onClick={handleShareWithImage} 
+              onClick={handleSaveTicket} 
               disabled={isGenerating}
-              className="flex-1 p-2 glass rounded-lg text-white text-sm"
-              data-testid="share-ticket-btn"
+              className="flex-1 p-3 rounded-lg font-semibold text-white transition-all"
+              style={{ 
+                background: 'linear-gradient(135deg, #d91cd2 0%, #8b5cf6 100%)',
+                boxShadow: '0 0 15px rgba(217, 28, 210, 0.4)'
+              }}
+              data-testid="save-ticket-btn"
             >
-              {t('shareWithImage')}
+              {isGenerating ? t('generatingImage') : t('saveTicket')}
+            </button>
+            <button 
+              onClick={handleShareWhatsApp} 
+              disabled={isGenerating}
+              className="flex-1 p-3 rounded-lg font-semibold text-white transition-all"
+              style={{ 
+                background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                boxShadow: '0 0 15px rgba(37, 211, 102, 0.4)'
+              }}
+              data-testid="share-whatsapp-btn"
+            >
+              📤 Partager sur WhatsApp
             </button>
           </div>
+          
+          {/* Secondary action: Print */}
+          <button onClick={handlePrint} className="w-full p-2 glass rounded-lg text-white text-sm">{t('print')}</button>
         </div>
       </div>
     </div>
