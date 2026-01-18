@@ -2589,17 +2589,77 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
                   className="px-3 py-2 rounded-lg neon-input text-sm" />
                 <div>
                   <label className="block text-white text-xs mb-1 opacity-70">📦 Articles autorisés (Cours + Produits)</label>
-                  {/* Scrollable courses list */}
-                  <div className="courses-scroll-container" style={{ maxHeight: '120px', overflowY: 'auto', padding: '4px' }} data-testid="courses-scroll-container">
-                    <div className="flex flex-wrap gap-2">
-                      {courses.map(c => (
-                        <button key={c.id} type="button" onClick={() => toggleCourseSelection(c.id)}
-                          className={`px-2 py-1 rounded text-xs transition-all ${newCode.courses.includes(c.id) ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'}`}
-                          style={{ color: 'white' }} data-testid={`course-select-${c.id}`}>{c.name.split(' – ')[0]}</button>
-                      ))}
-                      {courses.length === 0 && <span className="text-white text-xs opacity-50">{t('allCourses')}</span>}
-                    </div>
+                  {/* Scrollable list - Courses AND Products */}
+                  <div className="courses-scroll-container" style={{ maxHeight: '150px', overflowY: 'auto', padding: '4px' }} data-testid="articles-scroll-container">
+                    {/* Section Cours */}
+                    {courses.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-white text-xs opacity-40 mb-1">📅 Cours</p>
+                        <div className="flex flex-wrap gap-2">
+                          {courses.map(c => (
+                            <button key={c.id} type="button" onClick={() => toggleCourseSelection(c.id)}
+                              className={`px-2 py-1 rounded text-xs transition-all ${newCode.courses.includes(c.id) ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+                              style={{ color: 'white' }} data-testid={`course-select-${c.id}`}>{c.name.split(' – ')[0]}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Section Produits */}
+                    {offers.filter(o => o.isProduct).length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-white text-xs opacity-40 mb-1">🛒 Produits</p>
+                        <div className="flex flex-wrap gap-2">
+                          {offers.filter(o => o.isProduct).map(p => (
+                            <button key={p.id} type="button" onClick={() => toggleCourseSelection(p.id)}
+                              className={`px-2 py-1 rounded text-xs transition-all ${newCode.courses.includes(p.id) ? 'bg-pink-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+                              style={{ color: 'white' }} data-testid={`product-select-${p.id}`}>{p.name}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Section Offres/Services */}
+                    {offers.filter(o => !o.isProduct).length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-white text-xs opacity-40 mb-1">🎫 Offres</p>
+                        <div className="flex flex-wrap gap-2">
+                          {offers.filter(o => !o.isProduct).map(o => (
+                            <button key={o.id} type="button" onClick={() => toggleCourseSelection(o.id)}
+                              className={`px-2 py-1 rounded text-xs transition-all ${newCode.courses.includes(o.id) ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+                              style={{ color: 'white' }} data-testid={`offer-select-${o.id}`}>{o.name}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {courses.length === 0 && offers.length === 0 && (
+                      <span className="text-white text-xs opacity-50">Tous les articles</span>
+                    )}
                   </div>
+                  {/* Articles sélectionnés avec croix de suppression */}
+                  {newCode.courses.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-white text-xs opacity-40 mb-1">Sélectionnés:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {newCode.courses.map(articleId => {
+                          const course = courses.find(c => c.id === articleId);
+                          const offer = offers.find(o => o.id === articleId);
+                          const name = course?.name?.split(' – ')[0] || offer?.name || articleId;
+                          const bgColor = course ? 'bg-purple-600/30' : offer?.isProduct ? 'bg-pink-600/30' : 'bg-blue-600/30';
+                          const textColor = course ? 'text-purple-300' : offer?.isProduct ? 'text-pink-300' : 'text-blue-300';
+                          return (
+                            <span key={articleId} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${bgColor} ${textColor}`}>
+                              {name}
+                              <button
+                                type="button"
+                                onClick={() => removeAllowedArticle(articleId)}
+                                className="hover:text-white ml-1 font-bold"
+                                title="Supprimer"
+                              >×</button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               
