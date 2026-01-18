@@ -173,15 +173,35 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
   const [showManualContactForm, setShowManualContactForm] = useState(false);
   const [manualContact, setManualContact] = useState({ name: "", email: "", whatsapp: "" });
 
+  // Fonction pour charger les réservations avec pagination
+  const loadReservations = async (page = 1, limit = 20) => {
+    setLoadingReservations(true);
+    try {
+      const res = await axios.get(`${API}/reservations?page=${page}&limit=${limit}`);
+      setReservations(res.data.data);
+      setReservationPagination(res.data.pagination);
+    } catch (err) {
+      console.error("Error loading reservations:", err);
+    } finally {
+      setLoadingReservations(false);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Charger les réservations avec pagination (20 dernières)
+        const resPromise = axios.get(`${API}/reservations?page=1&limit=20`);
         const [res, crs, off, usr, lnk, cpt, cds] = await Promise.all([
-          axios.get(`${API}/reservations`), axios.get(`${API}/courses`), axios.get(`${API}/offers`),
+          resPromise, axios.get(`${API}/courses`), axios.get(`${API}/offers`),
           axios.get(`${API}/users`), axios.get(`${API}/payment-links`), axios.get(`${API}/concept`), 
           axios.get(`${API}/discount-codes`)
         ]);
-        setReservations(res.data); setCourses(crs.data); setOffers(off.data); setUsers(usr.data);
+        // Réservations avec pagination
+        setReservations(res.data.data);
+        setReservationPagination(res.data.pagination);
+        
+        setCourses(crs.data); setOffers(off.data); setUsers(usr.data);
         setPaymentLinks(lnk.data); setConcept(cpt.data); setDiscountCodes(cds.data);
         
         // === SANITIZE DATA: Nettoyer automatiquement les données fantômes ===
