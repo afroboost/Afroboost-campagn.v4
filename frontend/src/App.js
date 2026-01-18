@@ -2725,9 +2725,27 @@ function App() {
     );
   };
 
+  // Fonction de déconnexion Google OAuth
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
+    } catch (err) {
+      console.error('Erreur déconnexion:', err);
+    }
+    setCoachMode(false);
+    setCoachUser(null);
+  };
+
+  // Fonction de connexion Google OAuth
+  const handleGoogleLogin = (userData) => {
+    setCoachUser(userData);
+    setCoachMode(true);
+    setShowCoachLogin(false);
+  };
+
   if (showSplash) return <SplashScreen logoUrl={concept.logoUrl} />;
-  if (showCoachLogin) return <CoachLoginModal t={t} onLogin={() => { setCoachMode(true); setShowCoachLogin(false); }} onCancel={() => setShowCoachLogin(false)} />;
-  if (coachMode) return <CoachDashboard t={t} lang={lang} onBack={() => setCoachMode(false)} onLogout={() => setCoachMode(false)} />;
+  if (showCoachLogin) return <CoachLoginModal t={t} onLogin={handleGoogleLogin} onCancel={() => setShowCoachLogin(false)} />;
+  if (coachMode) return <CoachDashboard t={t} lang={lang} onBack={() => setCoachMode(false)} onLogout={handleLogout} coachUser={coachUser} />;
 
   // Filtrer les offres et cours selon visibilité, filtre actif et recherche
   // =====================================================
