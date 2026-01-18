@@ -1493,7 +1493,14 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
         {tab === "reservations" && (
           <div className="card-gradient rounded-xl p-4 sm:p-6">
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-              <h2 className="font-semibold text-white text-lg sm:text-xl">{t('reservationsList')}</h2>
+              <div>
+                <h2 className="font-semibold text-white text-lg sm:text-xl">{t('reservationsList')}</h2>
+                <p className="text-white/50 text-xs mt-1">
+                  {reservationPagination.total > 0 
+                    ? `Affichage ${((reservationPagination.page - 1) * reservationPagination.limit) + 1}-${Math.min(reservationPagination.page * reservationPagination.limit, reservationPagination.total)} sur ${reservationPagination.total} réservations`
+                    : 'Aucune réservation'}
+                </p>
+              </div>
               <div className="flex gap-2 flex-wrap">
                 <button onClick={() => setShowScanner(true)} className="btn-primary px-3 py-2 rounded-lg flex items-center gap-2 text-xs sm:text-sm" data-testid="scan-ticket-btn">
                   📷 Scanner
@@ -1501,6 +1508,33 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
                 <button onClick={exportCSV} className="csv-btn text-xs sm:text-sm" data-testid="export-csv">{t('downloadCSV')}</button>
               </div>
             </div>
+            
+            {/* Pagination Controls */}
+            {reservationPagination.pages > 1 && (
+              <div className="flex justify-center items-center gap-2 mb-4">
+                <button 
+                  onClick={() => loadReservations(reservationPagination.page - 1)}
+                  disabled={reservationPagination.page <= 1 || loadingReservations}
+                  className="px-3 py-1 rounded bg-purple-600/50 text-white text-sm disabled:opacity-30 hover:bg-purple-600"
+                >
+                  ← Précédent
+                </button>
+                <span className="text-white text-sm px-3">
+                  Page {reservationPagination.page} / {reservationPagination.pages}
+                </span>
+                <button 
+                  onClick={() => loadReservations(reservationPagination.page + 1)}
+                  disabled={reservationPagination.page >= reservationPagination.pages || loadingReservations}
+                  className="px-3 py-1 rounded bg-purple-600/50 text-white text-sm disabled:opacity-30 hover:bg-purple-600"
+                >
+                  Suivant →
+                </button>
+              </div>
+            )}
+            
+            {loadingReservations && (
+              <div className="text-center py-4 text-purple-400">⏳ Chargement...</div>
+            )}
             
             {/* === MOBILE VIEW: Cards === */}
             <div className="block md:hidden space-y-3">
