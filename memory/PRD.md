@@ -511,6 +511,14 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - **Changer d'identité** : Lien "Pas [Prénom] ? Changer d'identité" efface localStorage
   - **Backend** : Ajout endpoint `PUT /api/users/{id}` pour mise à jour des contacts
   - **Tests** : 11/11 tests backend pytest + 100% frontend passés
+- [x] **Fondations Service Audio - Feature Flags & Abonnements (18 Jan 2026)**:
+  - **Feature Flags** : Collection `feature_flags` avec `AUDIO_SERVICE_ENABLED: false` par défaut
+  - **Coach Subscription** : Collection `coach_subscriptions` avec droits par service (`hasAudioService`, etc.)
+  - **Vérification d'accès** : Endpoint `/api/verify-service-access/{service}` 
+  - **Logique métier** : Accès = Feature Flag ON + Coach Subscription OK
+  - **Frontend service** : `/services/serviceAccess.js` avec cache et helpers
+  - **Collections MongoDB** : `feature_flags`, `coach_subscriptions`
+  - **Interface inchangée** : Aucune modification visuelle du site
 
 ### P1 - À faire
 - [x] ~~**CRITICAL: Refactoring de App.js**~~ - ✅ COMPLÉTÉ - App.js réduit de 52%
