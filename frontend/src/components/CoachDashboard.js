@@ -518,10 +518,15 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
 
   // Supprimer une offre
   const deleteOffer = async (offerId) => {
-    if (!window.confirm("Supprimer cette offre ?")) return;
+    if (!window.confirm("⚠️ Supprimer définitivement cette offre ?\n\nCette action:\n• Supprime l'offre de la base\n• Retire l'offre des codes promo associés")) return;
     try {
       await axios.delete(`${API}/offers/${offerId}`);
       setOffers(prevOffers => prevOffers.filter(o => o.id !== offerId));
+      // Nettoyer localement les références dans les codes promo
+      setDiscountCodes(codes => codes.map(c => ({
+        ...c,
+        courses: c.courses ? c.courses.filter(id => id !== offerId) : []
+      })));
     } catch (err) {
       console.error("Erreur suppression offre:", err);
       alert("Erreur lors de la suppression");
