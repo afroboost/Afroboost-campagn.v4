@@ -47,3 +47,6 @@ export {
 
 // === SELECTOR DE LANGUE ===
 export { default as LanguageSelector } from './LanguageSelector';
+
+// === PAGE DE SUCCÈS PAIEMENT ===
+export { default as PaymentSuccessPage } from './PaymentSuccessPage';
