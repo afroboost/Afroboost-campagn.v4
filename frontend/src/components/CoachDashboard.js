@@ -3260,7 +3260,32 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* NOUVEAU: Boutons Copier et Partager WhatsApp */}
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(code.code);
+                            alert(`✅ Code "${code.code}" copié !`);
+                          }}
+                          className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                          style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.4)' }}
+                          data-testid={`copy-code-${code.id}`}
+                          title="Copier le code"
+                        >
+                          📋 Copier
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const message = `🎁 Voici ton code promo Afroboost !\n\n💎 Code: *${code.code}*\n💰 Réduction: ${code.type === '100%' ? '100%' : `${code.value}${code.type}`}\n\n👉 Utilise-le sur afroboost.com`;
+                            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+                          }}
+                          className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                          style={{ background: 'rgba(37, 211, 102, 0.2)', color: '#25D366', border: '1px solid rgba(37, 211, 102, 0.4)' }}
+                          data-testid={`share-whatsapp-${code.id}`}
+                          title="Partager sur WhatsApp"
+                        >
+                          📤 WhatsApp
+                        </button>
                         {/* Edit button */}
                         <button 
                           onClick={() => setEditingCode({...code})}
