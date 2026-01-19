@@ -1059,8 +1059,8 @@ async def create_checkout_session(request: CreateCheckoutRequest):
     
     # Construire les URLs dynamiquement basées sur l'origine frontend
     # {CHECKOUT_SESSION_ID} est remplacé automatiquement par Stripe
-    success_url = f"{request.originUrl}?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{request.originUrl}?payment=canceled"
+    success_url = f"{request.originUrl}?status=success&session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{request.originUrl}?status=canceled"
     
     # Montant en centimes (Stripe utilise les plus petites unités)
     amount_cents = int(request.amount * 100)
