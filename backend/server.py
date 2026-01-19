@@ -1045,99 +1045,207 @@ async def update_payment_links(links: PaymentLinksUpdate):
     )
     return await db.payment_links.find_one({"id": "payment_links"}, {"_id": 0})
 
-# --- Stripe Checkout Session ---
-class CheckoutRequest(BaseModel):
+# --- Stripe Checkout avec TWINT (emergentintegrations) ---
+
+class CreateCheckoutRequest(BaseModel):
     """Requête pour créer une session de paiement Stripe"""
     productName: str
-    amount: float  # Montant en CHF
+    amount: float  # Montant en CHF (decimal, ex: 25.00)
     customerEmail: Optional[str] = None
-    customerName: Optional[str] = None
-    successUrl: str
-    cancelUrl: str
-    metadata: Optional[dict] = None
+    originUrl: str  # URL d'origine du frontend pour construire success/cancel URLs
+    reservationData: Optional[dict] = None  # Données de réservation pour metadata
 
 @api_router.post("/create-checkout-session")
-async def create_checkout_session(request: CheckoutRequest):
+async def create_checkout_session(request: CreateCheckoutRequest, http_request: Request):
     """
     Crée une session Stripe Checkout avec support pour cartes et TWINT.
     TWINT nécessite la devise CHF.
     """
-    if not stripe.api_key:
+    if not STRIPE_API_KEY:
         raise HTTPException(status_code=500, detail="Stripe API key not configured")
     
-    # Montant en centimes (Stripe utilise les plus petites unités)
-    amount_cents = int(request.amount * 100)
+    # Construire les URLs dynamiquement
+    success_url = f"{request.originUrl}?payment_success=true&session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{request.originUrl}?payment_canceled=true"
     
-    # Méthodes de paiement à tenter
+    # Préparer les metadata
+    metadata = {
+        "product_name": request.productName,
+        "customer_email": request.customerEmail or "",
+        "source": "afroboost_checkout"
+    }
+    if request.reservationData:
+        metadata["reservation_id"] = request.reservationData.get("id", "")
+        metadata["course_name"] = request.reservationData.get("courseName", "")
+    
+    # Initialiser Stripe Checkout via emergentintegrations
+    host_url = str(http_request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    
+    # Méthodes de paiement: card + twint (devise CHF obligatoire pour TWINT)
     payment_methods = ['card', 'twint']
     
     try:
-        # Essayer avec card + twint
-        session = stripe.checkout.Session.create(
-            payment_method_types=payment_methods,
-            line_items=[{
-                'price_data': {
-                    'currency': 'chf',  # TWINT requiert CHF
-                    'product_data': {
-                        'name': request.productName,
-                    },
-                    'unit_amount': amount_cents,
-                },
-                'quantity': 1,
-            }],
-            mode='payment',
-            success_url=request.successUrl,
-            cancel_url=request.cancelUrl,
-            customer_email=request.customerEmail,
-            metadata=request.metadata or {},
+        # Créer la session de checkout
+        checkout_request = CheckoutSessionRequest(
+            amount=float(request.amount),  # Garder en float
+            currency="chf",  # TWINT requiert CHF
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata=metadata,
+            payment_methods=payment_methods
         )
         
-        logger.info(f"Stripe session created with payment methods: {payment_methods}")
+        session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
+        
+        # Créer l'entrée dans payment_transactions
+        transaction = {
+            "id": str(uuid.uuid4()),
+            "session_id": session.session_id,
+            "amount": request.amount,
+            "currency": "chf",
+            "product_name": request.productName,
+            "customer_email": request.customerEmail,
+            "metadata": metadata,
+            "payment_status": "pending",
+            "payment_methods": payment_methods,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.payment_transactions.insert_one(transaction)
+        
+        logger.info(f"Stripe session created with payment methods: {payment_methods}, session_id: {session.session_id}")
+        
         return {
-            "sessionId": session.id,
+            "sessionId": session.session_id,
             "url": session.url,
             "paymentMethods": payment_methods
         }
         
-    except stripe.error.InvalidRequestError as e:
-        # Si TWINT cause une erreur (non activé sur le compte), fallback sur card seul
-        logger.warning(f"TWINT not available, falling back to card only: {str(e)}")
+    except Exception as e:
+        error_msg = str(e)
+        logger.warning(f"Payment methods {payment_methods} failed: {error_msg}")
         
-        try:
-            session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': 'chf',
-                        'product_data': {
-                            'name': request.productName,
-                        },
-                        'unit_amount': amount_cents,
-                    },
-                    'quantity': 1,
-                }],
-                mode='payment',
-                success_url=request.successUrl,
-                cancel_url=request.cancelUrl,
-                customer_email=request.customerEmail,
-                metadata=request.metadata or {},
+        # Fallback: essayer avec card seulement si twint cause une erreur
+        if "twint" in error_msg.lower() or "payment_method" in error_msg.lower():
+            try:
+                logger.info("Falling back to card-only payment")
+                checkout_request = CheckoutSessionRequest(
+                    amount=float(request.amount),
+                    currency="chf",
+                    success_url=success_url,
+                    cancel_url=cancel_url,
+                    metadata=metadata,
+                    payment_methods=['card']
+                )
+                
+                session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
+                
+                # Créer l'entrée dans payment_transactions
+                transaction = {
+                    "id": str(uuid.uuid4()),
+                    "session_id": session.session_id,
+                    "amount": request.amount,
+                    "currency": "chf",
+                    "product_name": request.productName,
+                    "customer_email": request.customerEmail,
+                    "metadata": metadata,
+                    "payment_status": "pending",
+                    "payment_methods": ['card'],
+                    "warning": "TWINT not available",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.payment_transactions.insert_one(transaction)
+                
+                logger.info(f"Stripe session created with card only (TWINT fallback), session_id: {session.session_id}")
+                
+                return {
+                    "sessionId": session.session_id,
+                    "url": session.url,
+                    "paymentMethods": ['card'],
+                    "warning": "TWINT not available on this Stripe account"
+                }
+                
+            except Exception as fallback_error:
+                logger.error(f"Card-only fallback also failed: {str(fallback_error)}")
+                raise HTTPException(status_code=500, detail=f"Payment error: {str(fallback_error)}")
+        
+        logger.error(f"Stripe error: {error_msg}")
+        raise HTTPException(status_code=500, detail=f"Payment error: {error_msg}")
+
+@api_router.get("/checkout-status/{session_id}")
+async def get_checkout_status(session_id: str, http_request: Request):
+    """
+    Vérifie le statut d'une session de paiement Stripe.
+    """
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe API key not configured")
+    
+    host_url = str(http_request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    
+    try:
+        status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+        
+        # Mettre à jour le statut dans la base de données
+        await db.payment_transactions.update_one(
+            {"session_id": session_id},
+            {"$set": {
+                "payment_status": status.payment_status,
+                "status": status.status,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        return {
+            "status": status.status,
+            "paymentStatus": status.payment_status,
+            "amountTotal": status.amount_total,
+            "currency": status.currency,
+            "metadata": status.metadata
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking checkout status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error checking status: {str(e)}")
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """
+    Webhook Stripe pour recevoir les événements de paiement.
+    """
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe API key not configured")
+    
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    
+    try:
+        body = await request.body()
+        signature = request.headers.get("Stripe-Signature")
+        
+        webhook_response = await stripe_checkout.handle_webhook(body, signature)
+        
+        # Mettre à jour la transaction dans la base de données
+        if webhook_response.session_id:
+            await db.payment_transactions.update_one(
+                {"session_id": webhook_response.session_id},
+                {"$set": {
+                    "payment_status": webhook_response.payment_status,
+                    "event_type": webhook_response.event_type,
+                    "event_id": webhook_response.event_id,
+                    "webhook_received_at": datetime.now(timezone.utc).isoformat()
+                }}
             )
-            
-            logger.info("Stripe session created with card only (TWINT fallback)")
-            return {
-                "sessionId": session.id,
-                "url": session.url,
-                "paymentMethods": ['card'],
-                "warning": "TWINT not available on this Stripe account"
-            }
-            
-        except stripe.error.StripeError as fallback_error:
-            logger.error(f"Stripe fallback error: {str(fallback_error)}")
-            raise HTTPException(status_code=500, detail=f"Payment error: {str(fallback_error)}")
-            
-    except stripe.error.StripeError as e:
-        logger.error(f"Stripe error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Payment error: {str(e)}")
+        
+        logger.info(f"Webhook received: {webhook_response.event_type}, session: {webhook_response.session_id}")
+        return {"received": True}
+        
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Webhook error: {str(e)}")
 
 # --- Concept ---
 @api_router.get("/concept", response_model=Concept)
