@@ -2102,6 +2102,76 @@ function App() {
     }
   }, []);
 
+  // STRIPE CHECKOUT: Gestion du retour de paiement
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentSuccess = urlParams.get('payment_success');
+    const paymentCanceled = urlParams.get('payment_canceled');
+    const sessionId = urlParams.get('session_id');
+    
+    // Nettoyer l'URL après lecture
+    const cleanUrl = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('payment_success');
+      url.searchParams.delete('payment_canceled');
+      url.searchParams.delete('session_id');
+      window.history.replaceState({}, document.title, url.pathname);
+    };
+    
+    if (paymentSuccess === 'true' && sessionId) {
+      // Paiement réussi - finaliser la réservation
+      const pendingReservation = localStorage.getItem('pendingReservation');
+      if (pendingReservation) {
+        const reservation = JSON.parse(pendingReservation);
+        
+        // Vérifier le statut du paiement puis créer la réservation
+        const finalizeReservation = async () => {
+          try {
+            // Vérifier le statut du paiement
+            const statusResponse = await axios.get(`${API}/checkout-status/${sessionId}`);
+            
+            if (statusResponse.data.paymentStatus === 'paid' || statusResponse.data.status === 'complete') {
+              // Créer la réservation
+              const res = await axios.post(`${API}/reservations`, {
+                ...reservation,
+                stripeSessionId: sessionId,
+                paymentStatus: 'paid'
+              });
+              
+              // Utiliser le code promo si présent
+              if (reservation.appliedDiscount) {
+                await axios.post(`${API}/discount-codes/${reservation.appliedDiscount.id}/use`);
+              }
+              
+              // Sauvegarder les infos client
+              localStorage.setItem("af_client_info", JSON.stringify({
+                name: reservation.userName,
+                email: reservation.userEmail,
+                whatsapp: reservation.userWhatsapp
+              }));
+              
+              // Nettoyer
+              localStorage.removeItem('pendingReservation');
+              
+              // Afficher le succès
+              setLastReservation(res.data);
+              setShowSuccess(true);
+            }
+          } catch (err) {
+            console.error("Error finalizing reservation:", err);
+          }
+        };
+        
+        finalizeReservation();
+      }
+      cleanUrl();
+    } else if (paymentCanceled === 'true') {
+      // Paiement annulé
+      localStorage.removeItem('pendingReservation');
+      cleanUrl();
+    }
+  }, []);
+
   // MÉMORISATION CLIENT: Auto-fill when email matches saved client
   const handleEmailChange = (email) => {
     setUserEmail(email);
