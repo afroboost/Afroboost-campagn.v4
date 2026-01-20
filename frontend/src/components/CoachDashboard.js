@@ -101,12 +101,6 @@ const envoyerEmailDirect = async (emailDestinataire, texteIA) => {
     return false;
   }
 };
-    // Afficher l'erreur à l'utilisateur
-    window.alert("ERREUR EMAILJS: " + (e?.text || e?.message || "Erreur inconnue"));
-    
-    return false;
-  }
-};
 
 // ============================================================
 // === FONCTIONS AUTONOMES - ISOLÉES DE LA GESTION D'ÉTAT ===
