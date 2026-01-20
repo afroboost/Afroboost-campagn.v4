@@ -3981,9 +3981,10 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                       <div className="space-y-2">
                         <button 
                           type="button"
-                          onClick={handleSendWhatsAppCampaign}
+                          onClick={(e) => handleSendWhatsAppCampaign(e)}
                           disabled={whatsAppSendingProgress !== null || !isWhatsAppConfigured()}
                           className="w-full py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-center font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                          data-testid="send-whatsapp-campaign-btn"
                         >
                           {whatsAppSendingProgress ? '⏳ Envoi...' : '🚀 Auto (Twilio)'}
                         </button>
