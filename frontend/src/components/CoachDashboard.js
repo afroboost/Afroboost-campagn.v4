@@ -3835,13 +3835,14 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                 <div className="mb-4">
                   <button 
                     type="button"
-                    onClick={handleBulkSendCampaign}
+                    onClick={(e) => handleBulkSendCampaign(e)}
                     disabled={bulkSendingInProgress || (!isEmailJSConfigured() && !isWhatsAppConfigured())}
                     className="w-full py-4 rounded-xl font-bold text-white text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       background: 'linear-gradient(135deg, #3b82f6 0%, #22c55e 50%, #d91cd2 100%)',
                       boxShadow: bulkSendingInProgress ? 'none' : '0 0 20px rgba(217, 28, 210, 0.4)'
                     }}
+                    data-testid="bulk-send-campaign-btn"
                   >
                     {bulkSendingInProgress ? '⏳ Envoi en cours...' : '🚀 Envoyer Email + WhatsApp'}
                   </button>
