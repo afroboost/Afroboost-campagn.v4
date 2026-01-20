@@ -3920,6 +3920,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                           onClick={(e) => handleSendEmailCampaign(e)}
                           disabled={emailSendingProgress !== null || !isEmailJSConfigured()}
                           className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-center font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          data-testid="send-email-campaign-btn"
                         >
                           {emailSendingProgress ? '⏳ Envoi...' : '🚀 Envoyer automatiquement'}
                         </button>
