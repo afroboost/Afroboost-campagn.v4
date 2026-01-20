@@ -1216,12 +1216,15 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   
   // Sauvegarder la configuration EmailJS
   const handleSaveEmailJSConfig = () => {
+    console.log('💾 Saving EmailJS config:', emailJSConfig);
     const success = saveEmailJSConfig(emailJSConfig);
     if (success) {
       setShowEmailJSConfig(false);
       alert('✅ Configuration EmailJS sauvegardée !');
+      console.log('✅ EmailJS config saved successfully');
     } else {
       alert('❌ Erreur lors de la sauvegarde');
+      console.error('❌ Failed to save EmailJS config');
     }
   };
 
@@ -1232,15 +1235,30 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
       return;
     }
     
-    setTestEmailStatus('sending');
-    const result = await testEmailJSConfig(testEmailAddress);
+    // Sauvegarder d'abord la config actuelle
+    saveEmailJSConfig(emailJSConfig);
     
-    if (result.success) {
-      setTestEmailStatus('success');
-      setTimeout(() => setTestEmailStatus(null), 5000);
-    } else {
+    console.log('🧪 Testing EmailJS with address:', testEmailAddress);
+    setTestEmailStatus('sending');
+    
+    try {
+      const result = await testEmailJSConfig(testEmailAddress);
+      console.log('📧 Test result:', result);
+      
+      if (result.success) {
+        setTestEmailStatus('success');
+        alert('✅ Email de test envoyé avec succès !');
+        setTimeout(() => setTestEmailStatus(null), 5000);
+      } else {
+        setTestEmailStatus('error');
+        alert(`❌ Erreur: ${result.error}`);
+        console.error('❌ Test failed:', result.error);
+        setTimeout(() => setTestEmailStatus(null), 3000);
+      }
+    } catch (error) {
       setTestEmailStatus('error');
-      alert(`❌ Erreur: ${result.error}`);
+      alert(`❌ Erreur: ${error.message}`);
+      console.error('❌ Test exception:', error);
       setTimeout(() => setTestEmailStatus(null), 3000);
     }
   };
