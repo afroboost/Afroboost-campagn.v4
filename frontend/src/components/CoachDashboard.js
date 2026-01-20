@@ -3966,7 +3966,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                     />
                     <button 
                       type="button"
-                      onClick={handleTestEmailJS}
+                      onClick={(e) => handleTestEmailJS(e)}
                       disabled={testEmailStatus === 'sending' || !emailJSConfig.serviceId}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         testEmailStatus === 'success' ? 'bg-green-600' :
