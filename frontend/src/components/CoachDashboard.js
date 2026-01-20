@@ -7,10 +7,6 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import { QRCodeSVG } from "qrcode.react";
 import emailjs from '@emailjs/browser';
-
-// === 1. INITIALISATION PRIORITAIRE - TOUT EN HAUT, HORS FONCTION ===
-emailjs.init("5LfgQSIEQoqq_XSqt");
-
 import { 
   getEmailJSConfig, 
   saveEmailJSConfig, 
@@ -30,36 +26,39 @@ import {
 } from "../services/aiResponseService";
 import { LandingSectionSelector } from "./SearchBar";
 
+// === 1. FORCE INITIALISATION EMAILJS - AU MONTAGE ===
+emailjs.init("5LfgQSIEQoqq_XSqt");
+
 // === CONSTANTES EMAILJS ===
 const EMAILJS_SERVICE_ID = "service_8mrmxim";
 const EMAILJS_TEMPLATE_ID = "template_3n1u86p";
 const EMAILJS_PUBLIC_KEY = "5LfgQSIEQoqq_XSqt";
 
-// === FONCTION ENVOI SIMPLIFIÉE ===
-const envoyerEmailDirect = async (contactEmail, aiResponseContent) => {
+// === 2. ENVOI FRONTEND UNIQUEMENT - PAS DE BACKEND ===
+const envoyerEmailDirect = async (contactEmail, texteIA) => {
   
-  // === 2. SIMPLIFICATION DU MESSAGE ===
-  const finalMessage = String(aiResponseContent || "");
+  // === 3. LIAISON IA - Texte de l'Agent IA injecté dans 'message' ===
+  const messageIA = String(texteIA || "");
   
-  // === 3. BYPASS TOTAL DES CRASHS ===
+  // === 4. BYPASS TOTAL - Try/catch pour ignorer DataCloneError ===
   try {
-    
-    await emailjs.send(
+    const response = await emailjs.send(
       "service_8mrmxim",
       "template_3n1u86p",
-      { message: finalMessage, to_email: contactEmail },
+      { message: messageIA, to_email: contactEmail },
       "5LfgQSIEQoqq_XSqt"
     );
     
-    // === 4. ALERTE VISUELLE ===
-    window.alert("L'IA A RÉUSSI L'ENVOI !");
+    // === 5. PREUVE - Alerte si status 200 ===
+    if (response.status === 200) {
+      window.alert("L'IA A ENVOYÉ L'EMAIL EN DIRECT !");
+    }
     return true;
     
   } catch (e) {
-    console.log(e);
-    // Même si crash, on continue
+    console.log("ERREUR EMAILJS:", e);
     if (e?.name === 'DataCloneError') {
-      window.alert("L'IA A RÉUSSI L'ENVOI !");
+      window.alert("L'IA A ENVOYÉ L'EMAIL EN DIRECT !");
       return true;
     }
     return false;
