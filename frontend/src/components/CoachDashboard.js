@@ -1358,22 +1358,43 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   };
 
-  // Tester la configuration WhatsApp
-  const handleTestWhatsApp = async () => {
+  // Tester la configuration WhatsApp - avec isolation PostHog
+  const handleTestWhatsApp = async (e) => {
+    // Empêcher le rafraîchissement et la propagation (isolation PostHog)
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!testWhatsAppNumber) {
       alert('Veuillez entrer un numéro de téléphone pour le test');
       return;
     }
     
-    setTestWhatsAppStatus('sending');
-    const result = await testWhatsAppConfig(testWhatsAppNumber);
+    // Sauvegarder d'abord la config actuelle
+    await handleSaveWhatsAppConfig();
     
-    if (result.success) {
-      setTestWhatsAppStatus('success');
-      setTimeout(() => setTestWhatsAppStatus(null), 5000);
-    } else {
+    console.log('🧪 Testing WhatsApp with number:', testWhatsAppNumber);
+    setTestWhatsAppStatus('sending');
+    
+    try {
+      const result = await testWhatsAppConfig(testWhatsAppNumber);
+      console.log('📱 WhatsApp test result:', result);
+      
+      if (result.success) {
+        setTestWhatsAppStatus('success');
+        alert('✅ WhatsApp de test envoyé avec succès !');
+        setTimeout(() => setTestWhatsAppStatus(null), 5000);
+      } else {
+        setTestWhatsAppStatus('error');
+        alert(`❌ Erreur: ${result.error}`);
+        console.error('❌ WhatsApp test failed:', result.error);
+        setTimeout(() => setTestWhatsAppStatus(null), 3000);
+      }
+    } catch (error) {
       setTestWhatsAppStatus('error');
-      alert(`❌ Erreur: ${result.error}`);
+      alert(`❌ Erreur: ${error.message}`);
+      console.error('❌ WhatsApp test exception:', error);
       setTimeout(() => setTestWhatsAppStatus(null), 3000);
     }
   };
