@@ -1093,6 +1093,17 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   const [aiTestResponse, setAiTestResponse] = useState(null);
   const [aiTestLoading, setAiTestLoading] = useState(false);
 
+  // === CONVERSATIONS STATE ===
+  const [chatSessions, setChatSessions] = useState([]);
+  const [chatParticipants, setChatParticipants] = useState([]);
+  const [chatLinks, setChatLinks] = useState([]);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [sessionMessages, setSessionMessages] = useState([]);
+  const [coachMessage, setCoachMessage] = useState('');
+  const [newLinkTitle, setNewLinkTitle] = useState('');
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [copiedLinkId, setCopiedLinkId] = useState(null);
+
   // Add schedule slot
   const addScheduleSlot = () => {
     const now = new Date();
