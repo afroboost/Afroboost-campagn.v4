@@ -11,7 +11,7 @@ import requests
 import os
 import re
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://chat-recognition.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://push-notify-chat.preview.emergentagent.com').rstrip('/')
 
 # ============ BACKEND API TESTS ============
 
