@@ -5771,7 +5771,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                   </p>
                 ) : (
                   <div className="space-y-2" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                    {chatSessions.map(session => {
+                    {filteredChatSessions.map(session => {
                       const participantNames = session.participant_ids?.map(id => getParticipantName(id)).join(', ') || 'Aucun participant';
                       const isSelected = selectedSession?.id === session.id;
                       
