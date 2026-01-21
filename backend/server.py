@@ -435,6 +435,83 @@ class ChatMessage(BaseModel):
     leadId: str = ""
     firstName: str = ""
 
+# ==================== SYSTÈME DE CHAT AMÉLIORÉ ====================
+# Modèles pour la reconnaissance des utilisateurs, sessions et modes de conversation
+
+class ChatParticipant(BaseModel):
+    """Représente un participant au chat (utilisateur/client)"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    whatsapp: Optional[str] = ""
+    email: Optional[str] = ""
+    source: str = "chat_afroboost"  # Source par défaut, peut identifier un lien spécifique
+    link_token: Optional[str] = None  # Token du lien via lequel l'utilisateur est arrivé
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    last_seen_at: Optional[str] = None
+
+class ChatParticipantCreate(BaseModel):
+    name: str
+    whatsapp: Optional[str] = ""
+    email: Optional[str] = ""
+    source: str = "chat_afroboost"
+    link_token: Optional[str] = None
+
+class ChatSession(BaseModel):
+    """Session de chat avec gestion des modes et participants"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    participant_ids: List[str] = []  # Liste des IDs de participants
+    mode: str = "ai"  # "ai", "human", "community"
+    is_ai_active: bool = True  # Interrupteur pour désactiver l'IA
+    is_deleted: bool = False  # Suppression logique
+    link_token: str = Field(default_factory=lambda: str(uuid.uuid4())[:12])  # Token unique pour partage
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: Optional[str] = None
+    deleted_at: Optional[str] = None
+    # Métadonnées pour le coach
+    title: Optional[str] = None  # Titre optionnel pour identifier la session
+    notes: Optional[str] = None  # Notes du coach sur cette session
+
+class ChatSessionCreate(BaseModel):
+    mode: str = "ai"
+    is_ai_active: bool = True
+    title: Optional[str] = None
+
+class ChatSessionUpdate(BaseModel):
+    mode: Optional[str] = None
+    is_ai_active: Optional[bool] = None
+    is_deleted: Optional[bool] = None
+    title: Optional[str] = None
+    notes: Optional[str] = None
+
+class EnhancedChatMessage(BaseModel):
+    """Message de chat amélioré avec session, sender et suppression logique"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
+    sender_id: str  # ID du participant ou "coach" ou "ai"
+    sender_name: str
+    sender_type: str = "user"  # "user", "coach", "ai"
+    content: str
+    mode: str = "ai"  # Mode au moment de l'envoi: "ai", "human", "community"
+    is_deleted: bool = False  # Suppression logique
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    deleted_at: Optional[str] = None
+
+class EnhancedChatMessageCreate(BaseModel):
+    session_id: str
+    sender_id: str
+    sender_name: str
+    sender_type: str = "user"
+    content: str
+
+class ChatLinkResponse(BaseModel):
+    """Réponse pour la génération de lien partageable"""
+    link_token: str
+    share_url: str
+    session_id: str
+
 # ==================== ROUTES ====================
 
 @api_router.get("/")
