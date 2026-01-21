@@ -802,16 +802,31 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   };
   
   // Add manual contact to users list (for beneficiary dropdown)
+  // SYNCHRONISATION CRM: Ajoute aussi dans chat_participants
   const addManualContact = async (e) => {
     e.preventDefault();
     if (!manualContact.name || !manualContact.email) return;
     try {
+      // 1. Créer dans la collection users (pour les codes promo)
       const response = await axios.post(`${API}/users`, {
         name: manualContact.name,
         email: manualContact.email,
         whatsapp: manualContact.whatsapp || ""
       });
       setUsers([...users, response.data]);
+      
+      // 2. SYNCHRONISATION: Créer aussi dans chat_participants (CRM global)
+      try {
+        await addManualChatParticipant(
+          manualContact.name,
+          manualContact.email,
+          manualContact.whatsapp || "",
+          "manual_promo"
+        );
+      } catch (crmErr) {
+        console.warn("CRM sync warning:", crmErr);
+      }
+      
       setManualContact({ name: "", email: "", whatsapp: "" });
       setShowManualContactForm(false);
     } catch (err) {
