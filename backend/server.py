@@ -2879,9 +2879,11 @@ Sois concis (max 3 phrases), chaleureux et utilise des emojis avec parcimonie.
     # Récupérer le concept pour contexte
     concept = await db.concept.find_one({"id": "concept"}, {"_id": 0})
     if concept:
-        context += f"\n\nContexte: {concept.get('description', '')}"
+        context += f"\n\nContexte de la marque: {concept.get('description', '')}"
     
-    full_system_prompt = ai_config.get("systemPrompt", "Tu es l'assistant IA d'Afroboost.") + context
+    # Combiner le prompt de vente avec le prompt personnalisé
+    base_prompt = ai_config.get("systemPrompt", "Tu es l'assistant IA d'Afroboost.")
+    full_system_prompt = sales_prompt + "\n\n" + base_prompt + context
     
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
