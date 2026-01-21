@@ -728,6 +728,47 @@ Les fonctions d'envoi sont maintenant **au niveau module** (hors React) pour év
    - Suppression et restauration de messages testées
    - Liens cliquables vérifiés
 
+### Finalisation Globale - Phase Finale (21 Jan 2026)
+1. ✅ **Emojis Personnalisés (Upload Coach)**:
+   - Collection `custom_emojis` avec `id`, `name`, `image_data` (base64), `category`
+   - Endpoint `POST /api/chat/emojis` - upload emoji avec validation base64
+   - Endpoint `GET /api/chat/emojis` - liste tous les emojis actifs
+   - Endpoint `DELETE /api/chat/emojis/{id}` - suppression emoji
+   - Picker emoji dans l'input coach avec preview et upload
+   - Tags `[emoji:id]` remplacés par `<img>` lors de l'envoi
+
+2. ✅ **Discussions Privées (Chat Communautaire)**:
+   - Endpoint `POST /api/chat/start-private` - crée session privée entre 2 participants
+   - Vérifie si une session existe déjà entre les 2 personnes
+   - Mode `human` automatiquement activé pour les discussions privées
+   - Message de bienvenue système automatique
+   - Dans le widget: clic sur le nom d'un participant → `startPrivateChat()`
+   - Indicateur "💬 Discussion privée avec {nom}" dans le header
+
+3. ✅ **Intelligence IA (Ventes)**:
+   - Prompt enrichi avec catalogue produits/offres/cours
+   - Récupération automatique des offres actives et cours disponibles
+   - IA capable de proposer des liens de paiement et réservation
+   - Réponses concises (max 3 phrases) et orientées conversion
+
+4. ✅ **Synchronisation CRM & Codes Promo**:
+   - `allContacts` combine Users + Reservations + Chat Participants
+   - `addManualContact()` crée aussi dans `chat_participants` (source: "manual_promo")
+   - Contacts CRM visibles et sélectionnables dans les codes promo
+   - Traçabilité de la source dans toutes les vues
+
+5. ✅ **Gestion Liens et Suppression**:
+   - Boutons suppression 🗑️ sur liens, sessions et contacts
+   - `DELETE /api/chat/participants/{id}` avec nettoyage sessions
+   - Soft delete sessions avec `is_deleted: true`
+   - Mise à jour instantanée UI après suppression
+
+6. ✅ **Tests automatisés**:
+   - iteration_30: 15/15 backend tests (100%)
+   - Custom Emojis CRUD testé
+   - Private Chat testé avec sessions existantes
+   - Code review complet passé
+
 ### P1 - À faire
 - [x] ~~**CRITICAL: Refactoring de App.js**~~ - ✅ COMPLÉTÉ - App.js réduit de 52%
 - [x] ~~**Notifications email après réservation**~~ - ✅ COMPLÉTÉ
