@@ -737,12 +737,51 @@ Les fonctions d'envoi sont maintenant **au niveau module** (hors React) pour év
 - [x] ~~**Archivage cours**~~ - ✅ COMPLÉTÉ
 - [x] ~~**Correction Bug DataCloneError**~~ - ✅ COMPLÉTÉ (20 Jan 2026)
 - [x] ~~**Système de Chat Backend**~~ - ✅ COMPLÉTÉ (21 Jan 2026)
-- [ ] **Frontend Chat Amélioré** : Connecter l'interface utilisateur à la nouvelle logique backend
+- [x] ~~**Frontend Chat Amélioré**~~ - ✅ COMPLÉTÉ (21 Jan 2026)
+- [x] ~~**UX Mobile Chat Widget**~~ - ✅ COMPLÉTÉ (21 Jan 2026) - Widget 85vh mobile, 70vh tablet
+- [x] ~~**Recherche Globale CRM**~~ - ✅ COMPLÉTÉ (21 Jan 2026)
+- [x] ~~**Suppression Multi-Plateforme**~~ - ✅ COMPLÉTÉ (21 Jan 2026)
 - [ ] **Migration CSS variables** : Refactoriser les styles inline (`style={{ color: '#D91CD2' }}`) pour utiliser les variables CSS `--primary-color` et `--glow-color`
 - [ ] **Lecteur Audio Côté Client** : Implémenter le lecteur audio sur la page publique pour les cours ayant une playlist
 - [ ] **Optimisation Backend MongoDB** - Appliquer pagination et projection sur les requêtes pour améliorer les performances en production.
 - [ ] Continuer refactoring: Extraire CoachLoginModal dans composant séparé
 - [ ] Tests automatisés pour les composants extraits
+
+### UX & CRM Améliorations (21 Jan 2026)
+1. ✅ **Widget Chat Responsive Mobile**:
+   - Widget occupe 85vh sur mobile (< 640px) 
+   - Widget occupe 70vh sur tablet (641px - 1024px)
+   - Classes CSS `.chat-widget-window` et `.chat-widget-button` avec media queries
+   - Interface fluide et lisible sur tous les appareils
+
+2. ✅ **Recherche Globale Conversations**:
+   - État `conversationSearch` avec input de recherche
+   - Filtrage en temps réel des liens, sessions et contacts
+   - Indicateur de résultats "X lien(s), Y conversation(s), Z contact(s)"
+   - Bouton ✕ pour effacer la recherche
+
+3. ✅ **Scroll Interne CRM**:
+   - Table CRM avec `maxHeight: 350px` et `overflowY: auto`
+   - Header sticky pour navigation facile
+   - Colonnes responsives (certaines masquées sur mobile)
+   - Statistiques CRM en bas (Total, Via liens, Via widget, Manuel)
+
+4. ✅ **Suppression Multi-Plateforme**:
+   - Endpoint `DELETE /api/chat/participants/{id}` avec nettoyage sessions
+   - Fonction `deleteChatParticipant()` avec confirmation
+   - Fonction `deleteChatSession()` (soft delete)
+   - Boutons 🗑️ sur sessions et contacts
+   - Mise à jour instantanée de l'UI après suppression
+
+5. ✅ **Synchronisation CRM**:
+   - `allContacts` combine Users + Reservations + Chat Participants
+   - Source traçable (users, reservations, chat_crm, link_xxx)
+   - Contacts du CRM disponibles dans toutes les vues
+
+6. ✅ **Tests automatisés**:
+   - iteration_29: 9/9 backend tests (100%)
+   - Responsive mobile/tablet vérifié
+   - Code review complet passé
 
 ### P2 - Backlog
 - [ ] Créer pages dédiées: /boutique, /profil (routing Vercel)
