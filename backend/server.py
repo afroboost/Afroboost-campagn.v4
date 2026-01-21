@@ -2343,6 +2343,583 @@ async def chat_with_ai(data: ChatMessage):
         logger.error(f"Chat AI error: {str(e)}")
         return {"response": "Désolé, une erreur s'est produite. Veuillez réessayer.", "responseTime": 0}
 
+# ==================== ENHANCED CHAT SYSTEM API ====================
+# Système de chat amélioré avec reconnaissance utilisateur, modes et liens partageables
+
+# --- Chat Participants (CRM) ---
+@api_router.get("/chat/participants")
+async def get_chat_participants():
+    """Récupère tous les participants du chat (CRM)"""
+    participants = await db.chat_participants.find({}, {"_id": 0}).to_list(1000)
+    return participants
+
+@api_router.get("/chat/participants/{participant_id}")
+async def get_chat_participant(participant_id: str):
+    """Récupère un participant par son ID"""
+    participant = await db.chat_participants.find_one({"id": participant_id}, {"_id": 0})
+    if not participant:
+        raise HTTPException(status_code=404, detail="Participant non trouvé")
+    return participant
+
+@api_router.post("/chat/participants")
+async def create_chat_participant(participant: ChatParticipantCreate):
+    """Crée un nouveau participant"""
+    participant_obj = ChatParticipant(**participant.model_dump())
+    await db.chat_participants.insert_one(participant_obj.model_dump())
+    return participant_obj.model_dump()
+
+@api_router.get("/chat/participants/find")
+async def find_participant(
+    name: Optional[str] = None,
+    email: Optional[str] = None,
+    whatsapp: Optional[str] = None
+):
+    """
+    Recherche un participant par nom, email ou WhatsApp.
+    Utilisé pour la reconnaissance automatique des utilisateurs.
+    """
+    query = {"$or": []}
+    
+    if name:
+        query["$or"].append({"name": {"$regex": name, "$options": "i"}})
+    if email:
+        query["$or"].append({"email": {"$regex": f"^{email}$", "$options": "i"}})
+    if whatsapp:
+        # Nettoyer le numéro WhatsApp pour la recherche
+        clean_whatsapp = whatsapp.replace(" ", "").replace("-", "").replace("+", "")
+        query["$or"].append({"whatsapp": {"$regex": clean_whatsapp}})
+    
+    if not query["$or"]:
+        return None
+    
+    participant = await db.chat_participants.find_one(query, {"_id": 0})
+    return participant
+
+@api_router.put("/chat/participants/{participant_id}")
+async def update_chat_participant(participant_id: str, update_data: dict):
+    """Met à jour un participant"""
+    update_data["last_seen_at"] = datetime.now(timezone.utc).isoformat()
+    await db.chat_participants.update_one(
+        {"id": participant_id},
+        {"$set": update_data}
+    )
+    updated = await db.chat_participants.find_one({"id": participant_id}, {"_id": 0})
+    return updated
+
+# --- Chat Sessions ---
+@api_router.get("/chat/sessions")
+async def get_chat_sessions(include_deleted: bool = False):
+    """Récupère toutes les sessions de chat (exclut les supprimées par défaut)"""
+    query = {} if include_deleted else {"is_deleted": {"$ne": True}}
+    sessions = await db.chat_sessions.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return sessions
+
+@api_router.get("/chat/sessions/{session_id}")
+async def get_chat_session(session_id: str):
+    """Récupère une session par son ID"""
+    session = await db.chat_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    return session
+
+@api_router.get("/chat/sessions/by-token/{link_token}")
+async def get_chat_session_by_token(link_token: str):
+    """
+    Récupère une session par son token de partage.
+    Utilisé quand un utilisateur arrive via un lien partagé.
+    """
+    session = await db.chat_sessions.find_one(
+        {"link_token": link_token, "is_deleted": {"$ne": True}}, 
+        {"_id": 0}
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Lien invalide ou session expirée")
+    return session
+
+@api_router.post("/chat/sessions")
+async def create_chat_session(session: ChatSessionCreate):
+    """Crée une nouvelle session de chat"""
+    session_obj = ChatSession(**session.model_dump())
+    await db.chat_sessions.insert_one(session_obj.model_dump())
+    return session_obj.model_dump()
+
+@api_router.put("/chat/sessions/{session_id}")
+async def update_chat_session(session_id: str, update: ChatSessionUpdate):
+    """
+    Met à jour une session de chat.
+    Utilisé pour changer le mode (IA/Humain/Communautaire) ou supprimer logiquement.
+    """
+    update_data = {k: v for k, v in update.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Si suppression logique, ajouter la date
+    if update_data.get("is_deleted"):
+        update_data["deleted_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.chat_sessions.update_one(
+        {"id": session_id},
+        {"$set": update_data}
+    )
+    updated = await db.chat_sessions.find_one({"id": session_id}, {"_id": 0})
+    return updated
+
+@api_router.post("/chat/sessions/{session_id}/add-participant")
+async def add_participant_to_session(session_id: str, participant_id: str):
+    """Ajoute un participant à une session existante"""
+    session = await db.chat_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    
+    # Vérifier que le participant existe
+    participant = await db.chat_participants.find_one({"id": participant_id}, {"_id": 0})
+    if not participant:
+        raise HTTPException(status_code=404, detail="Participant non trouvé")
+    
+    # Ajouter le participant s'il n'est pas déjà présent
+    if participant_id not in session.get("participant_ids", []):
+        await db.chat_sessions.update_one(
+            {"id": session_id},
+            {
+                "$push": {"participant_ids": participant_id},
+                "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+    
+    updated = await db.chat_sessions.find_one({"id": session_id}, {"_id": 0})
+    return updated
+
+@api_router.post("/chat/sessions/{session_id}/toggle-ai")
+async def toggle_session_ai(session_id: str):
+    """
+    Bascule l'état de l'IA pour une session.
+    Si l'IA est active, elle devient inactive et inversement.
+    """
+    session = await db.chat_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    
+    new_state = not session.get("is_ai_active", True)
+    new_mode = "ai" if new_state else "human"
+    
+    await db.chat_sessions.update_one(
+        {"id": session_id},
+        {"$set": {
+            "is_ai_active": new_state,
+            "mode": new_mode,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    updated = await db.chat_sessions.find_one({"id": session_id}, {"_id": 0})
+    return updated
+
+# --- Chat Messages ---
+@api_router.get("/chat/sessions/{session_id}/messages")
+async def get_session_messages(session_id: str, include_deleted: bool = False):
+    """Récupère tous les messages d'une session (exclut les supprimés par défaut)"""
+    query = {"session_id": session_id}
+    if not include_deleted:
+        query["is_deleted"] = {"$ne": True}
+    
+    messages = await db.chat_messages.find(query, {"_id": 0}).sort("created_at", 1).to_list(500)
+    return messages
+
+@api_router.post("/chat/messages")
+async def create_chat_message(message: EnhancedChatMessageCreate):
+    """
+    Crée un nouveau message dans une session.
+    Met à jour automatiquement le mode du message selon l'état de la session.
+    """
+    # Récupérer la session pour connaître le mode actuel
+    session = await db.chat_sessions.find_one({"id": message.session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    
+    message_obj = EnhancedChatMessage(
+        **message.model_dump(),
+        mode=session.get("mode", "ai")
+    )
+    await db.chat_messages.insert_one(message_obj.model_dump())
+    return message_obj.model_dump()
+
+@api_router.put("/chat/messages/{message_id}/delete")
+async def soft_delete_message(message_id: str):
+    """Suppression logique d'un message"""
+    await db.chat_messages.update_one(
+        {"id": message_id},
+        {"$set": {
+            "is_deleted": True,
+            "deleted_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    return {"success": True, "message": "Message marqué comme supprimé"}
+
+# --- Shareable Links (Liens Partageables) ---
+@api_router.post("/chat/generate-link")
+async def generate_shareable_link(request: Request):
+    """
+    Génère un lien partageable unique pour le chat IA.
+    Ce lien peut être partagé sur les réseaux sociaux.
+    """
+    body = await request.json()
+    title = body.get("title", "Chat Afroboost")
+    
+    # Créer une nouvelle session avec un token unique
+    session = ChatSession(
+        mode="ai",
+        is_ai_active=True,
+        title=title
+    )
+    await db.chat_sessions.insert_one(session.model_dump())
+    
+    # Construire l'URL de partage
+    # Note: L'URL de base sera configurée côté frontend
+    frontend_url = os.environ.get("FRONTEND_URL", "")
+    share_url = f"{frontend_url}/chat/{session.link_token}" if frontend_url else f"/chat/{session.link_token}"
+    
+    return {
+        "link_token": session.link_token,
+        "share_url": share_url,
+        "session_id": session.id
+    }
+
+@api_router.get("/chat/links")
+async def get_all_chat_links():
+    """
+    Récupère tous les liens de chat générés.
+    Utile pour le coach pour gérer ses liens partagés.
+    """
+    sessions = await db.chat_sessions.find(
+        {"is_deleted": {"$ne": True}},
+        {"_id": 0, "id": 1, "link_token": 1, "title": 1, "mode": 1, "is_ai_active": 1, "created_at": 1, "participant_ids": 1}
+    ).sort("created_at", -1).to_list(100)
+    
+    # Ajouter le nombre de participants pour chaque lien
+    for session in sessions:
+        session["participant_count"] = len(session.get("participant_ids", []))
+    
+    return sessions
+
+# --- Intelligent Chat Entry Point ---
+@api_router.post("/chat/smart-entry")
+async def smart_chat_entry(request: Request):
+    """
+    Point d'entrée intelligent pour le chat.
+    
+    1. Vérifie si l'utilisateur existe déjà (par nom, email ou WhatsApp)
+    2. Si oui, récupère ses sessions précédentes et son historique
+    3. Si non, crée un nouveau participant et une nouvelle session
+    4. Retourne les infos du participant et la session active
+    
+    Body attendu:
+    {
+        "name": "John",
+        "email": "john@example.com",  // Optionnel
+        "whatsapp": "+41761234567",   // Optionnel
+        "link_token": "abc123"         // Optionnel - si via lien partagé
+    }
+    """
+    body = await request.json()
+    name = body.get("name", "").strip()
+    email = body.get("email", "").strip()
+    whatsapp = body.get("whatsapp", "").strip()
+    link_token = body.get("link_token")
+    
+    if not name:
+        raise HTTPException(status_code=400, detail="Le nom est requis")
+    
+    # Rechercher un participant existant
+    existing_participant = None
+    search_query = {"$or": []}
+    
+    if email:
+        search_query["$or"].append({"email": {"$regex": f"^{email}$", "$options": "i"}})
+    if whatsapp:
+        clean_whatsapp = whatsapp.replace(" ", "").replace("-", "").replace("+", "")
+        if clean_whatsapp:
+            search_query["$or"].append({"whatsapp": {"$regex": clean_whatsapp}})
+    
+    # Recherche aussi par nom exact
+    search_query["$or"].append({"name": {"$regex": f"^{name}$", "$options": "i"}})
+    
+    if search_query["$or"]:
+        existing_participant = await db.chat_participants.find_one(search_query, {"_id": 0})
+    
+    # Déterminer la source
+    source = f"link_{link_token}" if link_token else "chat_afroboost"
+    
+    if existing_participant:
+        # Participant reconnu - mettre à jour last_seen
+        participant_id = existing_participant["id"]
+        update_fields = {"last_seen_at": datetime.now(timezone.utc).isoformat()}
+        
+        # Mettre à jour les infos si nouvelles
+        if email and not existing_participant.get("email"):
+            update_fields["email"] = email
+        if whatsapp and not existing_participant.get("whatsapp"):
+            update_fields["whatsapp"] = whatsapp
+        
+        await db.chat_participants.update_one(
+            {"id": participant_id},
+            {"$set": update_fields}
+        )
+        
+        participant = await db.chat_participants.find_one({"id": participant_id}, {"_id": 0})
+        is_returning = True
+    else:
+        # Nouveau participant
+        participant_obj = ChatParticipant(
+            name=name,
+            email=email,
+            whatsapp=whatsapp,
+            source=source,
+            link_token=link_token
+        )
+        await db.chat_participants.insert_one(participant_obj.model_dump())
+        participant = participant_obj.model_dump()
+        participant_id = participant["id"]
+        is_returning = False
+    
+    # Trouver ou créer la session
+    session = None
+    
+    if link_token:
+        # Si via lien partagé, utiliser cette session
+        session = await db.chat_sessions.find_one(
+            {"link_token": link_token, "is_deleted": {"$ne": True}},
+            {"_id": 0}
+        )
+    
+    if not session:
+        # Chercher une session active existante pour ce participant
+        sessions = await db.chat_sessions.find(
+            {
+                "participant_ids": participant_id,
+                "is_deleted": {"$ne": True}
+            },
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(1)
+        
+        if sessions:
+            session = sessions[0]
+    
+    if not session:
+        # Créer une nouvelle session
+        session_obj = ChatSession(
+            mode="ai",
+            is_ai_active=True,
+            participant_ids=[participant_id]
+        )
+        await db.chat_sessions.insert_one(session_obj.model_dump())
+        session = session_obj.model_dump()
+    else:
+        # Ajouter le participant à la session s'il n'y est pas
+        if participant_id not in session.get("participant_ids", []):
+            await db.chat_sessions.update_one(
+                {"id": session["id"]},
+                {
+                    "$push": {"participant_ids": participant_id},
+                    "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+                }
+            )
+            session = await db.chat_sessions.find_one({"id": session["id"]}, {"_id": 0})
+    
+    # Récupérer l'historique des messages si participant existant
+    chat_history = []
+    if is_returning:
+        chat_history = await db.chat_messages.find(
+            {"session_id": session["id"], "is_deleted": {"$ne": True}},
+            {"_id": 0}
+        ).sort("created_at", 1).to_list(50)
+    
+    return {
+        "participant": participant,
+        "session": session,
+        "is_returning": is_returning,
+        "chat_history": chat_history,
+        "message": f"Ravi de te revoir, {name} !" if is_returning else f"Bienvenue, {name} !"
+    }
+
+# --- AI Chat with Session Context ---
+@api_router.post("/chat/ai-response")
+async def get_ai_response_with_session(request: Request):
+    """
+    Envoie un message à l'IA avec le contexte de la session.
+    Vérifie que l'IA est active pour cette session avant de répondre.
+    
+    Body attendu:
+    {
+        "session_id": "xxx",
+        "participant_id": "xxx",
+        "message": "Bonjour!"
+    }
+    """
+    import time
+    start_time = time.time()
+    
+    body = await request.json()
+    session_id = body.get("session_id")
+    participant_id = body.get("participant_id")
+    message_text = body.get("message", "").strip()
+    
+    if not session_id or not participant_id or not message_text:
+        raise HTTPException(status_code=400, detail="session_id, participant_id et message sont requis")
+    
+    # Récupérer la session
+    session = await db.chat_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    
+    # Récupérer le participant
+    participant = await db.chat_participants.find_one({"id": participant_id}, {"_id": 0})
+    if not participant:
+        raise HTTPException(status_code=404, detail="Participant non trouvé")
+    
+    # Sauvegarder le message de l'utilisateur
+    user_message = EnhancedChatMessage(
+        session_id=session_id,
+        sender_id=participant_id,
+        sender_name=participant.get("name", "Utilisateur"),
+        sender_type="user",
+        content=message_text,
+        mode=session.get("mode", "ai")
+    )
+    await db.chat_messages.insert_one(user_message.model_dump())
+    
+    # Vérifier si l'IA est active pour cette session
+    if not session.get("is_ai_active", True) or session.get("mode") != "ai":
+        return {
+            "response": None,
+            "ai_active": False,
+            "mode": session.get("mode"),
+            "message_saved": True,
+            "user_message_id": user_message.id
+        }
+    
+    # Récupérer la config IA
+    ai_config = await db.ai_config.find_one({"id": "ai_config"}, {"_id": 0})
+    if not ai_config or not ai_config.get("enabled"):
+        return {
+            "response": "L'assistant IA est actuellement désactivé.",
+            "ai_active": False,
+            "message_saved": True,
+            "user_message_id": user_message.id
+        }
+    
+    # Construire le contexte
+    context = f"\n\nLe client qui te parle s'appelle {participant.get('name', 'l\\'utilisateur')}. Utilise son prénom dans ta réponse."
+    
+    # Récupérer les derniers messages pour le contexte
+    recent_messages = await db.chat_messages.find(
+        {"session_id": session_id, "is_deleted": {"$ne": True}},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    
+    if recent_messages:
+        history = "\n".join([
+            f"{'Client' if m.get('sender_type') == 'user' else 'Assistant'}: {m.get('content', '')}"
+            for m in reversed(recent_messages[1:])  # Exclure le message actuel
+        ])
+        context += f"\n\nHistorique récent:\n{history}"
+    
+    # Récupérer le concept pour contexte
+    concept = await db.concept.find_one({"id": "concept"}, {"_id": 0})
+    if concept:
+        context += f"\n\nContexte: {concept.get('description', '')}"
+    
+    full_system_prompt = ai_config.get("systemPrompt", "Tu es l'assistant IA d'Afroboost.") + context
+    
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        emergent_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not emergent_key:
+            return {"response": "Configuration IA incomplète.", "ai_active": False}
+        
+        chat = LlmChat(
+            api_key=emergent_key,
+            session_id=f"afroboost_session_{session_id}",
+            system_message=full_system_prompt
+        )
+        
+        user_msg = UserMessage(text=message_text)
+        ai_response_text = await chat.send_message(user_msg)
+        response_time = round(time.time() - start_time, 2)
+        
+        # Sauvegarder la réponse de l'IA
+        ai_message = EnhancedChatMessage(
+            session_id=session_id,
+            sender_id="ai",
+            sender_name="Assistant Afroboost",
+            sender_type="ai",
+            content=ai_response_text,
+            mode="ai"
+        )
+        await db.chat_messages.insert_one(ai_message.model_dump())
+        
+        # Log
+        await db.ai_logs.insert_one({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "session_id": session_id,
+            "from": participant.get("name", "anonymous"),
+            "message": message_text,
+            "response": ai_response_text,
+            "responseTime": response_time
+        })
+        
+        return {
+            "response": ai_response_text,
+            "ai_active": True,
+            "mode": "ai",
+            "response_time": response_time,
+            "user_message_id": user_message.id,
+            "ai_message_id": ai_message.id
+        }
+        
+    except Exception as e:
+        logger.error(f"AI Chat error: {str(e)}")
+        return {
+            "response": "Désolé, une erreur s'est produite. Veuillez réessayer.",
+            "ai_active": True,
+            "error": str(e)
+        }
+
+# --- Coach Response to Chat ---
+@api_router.post("/chat/coach-response")
+async def send_coach_response(request: Request):
+    """
+    Permet au coach d'envoyer un message dans une session.
+    Utilisé en mode "human" ou "community".
+    """
+    body = await request.json()
+    session_id = body.get("session_id")
+    message_text = body.get("message", "").strip()
+    coach_name = body.get("coach_name", "Coach")
+    
+    if not session_id or not message_text:
+        raise HTTPException(status_code=400, detail="session_id et message sont requis")
+    
+    session = await db.chat_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session non trouvée")
+    
+    # Créer le message du coach
+    coach_message = EnhancedChatMessage(
+        session_id=session_id,
+        sender_id="coach",
+        sender_name=coach_name,
+        sender_type="coach",
+        content=message_text,
+        mode=session.get("mode", "human")
+    )
+    await db.chat_messages.insert_one(coach_message.model_dump())
+    
+    return {
+        "success": True,
+        "message_id": coach_message.id,
+        "mode": session.get("mode")
+    }
+
 # Include router
 app.include_router(api_router)
 
