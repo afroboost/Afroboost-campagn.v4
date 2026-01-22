@@ -5907,11 +5907,17 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
             >
               <h4 className="text-white font-semibold mb-2">💡 Comment ça marche ?</h4>
               <ol className="text-white/70 text-sm space-y-2 list-decimal pl-5">
-                <li>Créez un lien en collant l'URL de votre vidéo YouTube</li>
-                <li>Personnalisez le slug (ex: <code className="text-purple-400">/v/promo-janvier</code>) pour un lien mémorable</li>
+                <li>Créez un lien en collant l&apos;URL de votre vidéo YouTube</li>
+                <li>Personnalisez le slug (ex: <code className="text-purple-400">promo-janvier</code>) pour un lien mémorable</li>
                 <li>Ajoutez un bouton CTA pour convertir les vues en réservations</li>
-                <li>Partagez le lien sur WhatsApp - l'aperçu affichera votre titre et image</li>
+                <li><strong>Cliquez sur 📤 Partager</strong> pour copier le lien avec aperçu WhatsApp</li>
               </ol>
+              <div className="mt-4 p-3 rounded-lg" style={{ background: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)' }}>
+                <p className="text-green-300 text-sm font-medium">
+                  ✅ <strong>Aperçu WhatsApp activé !</strong> Le lien de partage (<code>/api/share/...</code>) génère automatiquement 
+                  une grande image avec le titre quand vous le collez sur WhatsApp.
+                </p>
+              </div>
             </div>
           </div>
         )}
