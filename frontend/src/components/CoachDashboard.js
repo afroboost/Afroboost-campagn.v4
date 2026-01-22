@@ -5898,11 +5898,8 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                       {/* Infos */}
                       <div className="flex-1 min-w-0">
                         <h4 className="text-white font-semibold truncate">{link.title}</h4>
-                        <p className="text-purple-400 text-sm mt-1">
-                          📤 afroboosteur.com/api/share/{link.slug}
-                        </p>
-                        <p className="text-white/40 text-xs mt-1">
-                          👁️ Lecteur: /v/{link.slug}
+                        <p className="text-white/50 text-xs mt-1">
+                          /v/{link.slug}
                         </p>
                         <div className="flex items-center gap-4 mt-2 text-white/50 text-xs">
                           <span>👁️ {link.views || 0} vues</span>
@@ -5914,17 +5911,24 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                       {/* Actions */}
                       <div className="flex sm:flex-col gap-2 flex-shrink-0">
                         <button
-                          onClick={() => copyMediaLink(link.slug)}
+                          onClick={() => copyShareLink(link.slug)}
                           className="px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-all"
-                          title="Copier le lien de partage (avec aperçu WhatsApp)"
+                          title="Copier le lien avec aperçu WhatsApp"
                         >
                           📤 Partager
+                        </button>
+                        <button
+                          onClick={() => copyViewerLink(link.slug)}
+                          className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-all"
+                          title="Copier le lien du lecteur"
+                        >
+                          📋 Copier
                         </button>
                         <a
                           href={`https://afroboosteur.com/v/${link.slug}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-all text-center"
+                          className="px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium transition-all text-center"
                         >
                           👁️ Voir
                         </a>
