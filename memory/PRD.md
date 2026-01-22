@@ -946,6 +946,9 @@ Les fonctions d'envoi sont maintenant **au niveau module** (hors React) pour év
 - `push_subscriptions` **(NOUVEAU)**: `{participant_id, subscription (endpoint, keys), active, created_at, updated_at}`
 - `custom_emojis`: `{id, name, image_data (base64), category, active, created_at}`
 
+### Collection Media Links (NOUVEAU - 22 Jan 2026)
+- `media_links`: `{id, slug, video_url, youtube_id, title, description, thumbnail, cta_text, cta_link, campaign_id, views, created_at}`
+
 ---
 
 ## Credentials
