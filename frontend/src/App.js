@@ -3131,6 +3131,11 @@ function App() {
   
   const totalPrice = calculateTotal();
 
+  // Si on est sur /v/:slug, afficher le MediaViewer
+  if (mediaSlug) {
+    return <MediaViewer slug={mediaSlug} />;
+  }
+
   return (
     <div className="w-full min-h-screen p-6 relative section-gradient" style={{ fontFamily: 'system-ui, sans-serif' }}>
       <LanguageSelector lang={lang} setLang={setLang} />
