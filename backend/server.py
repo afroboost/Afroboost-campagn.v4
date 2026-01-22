@@ -3396,6 +3396,71 @@ async def notify_coach_new_message(participant_name: str, message_preview: str, 
         logger.error(f"Coach notification email failed: {str(e)}")
         return False
 
+# =============================================
+# ENDPOINT CAMPAGNES EMAIL VIA RESEND
+# =============================================
+@api_router.post("/campaigns/send-email")
+async def send_campaign_email(request: Request):
+    """
+    Envoie un email de campagne via Resend.
+    Remplace EmailJS pour un contrôle total côté serveur.
+    
+    Body attendu:
+    {
+        "to_email": "destinataire@example.com",
+        "to_name": "Nom Destinataire",
+        "subject": "Sujet de l'email",
+        "message": "Contenu HTML ou texte"
+    }
+    """
+    body = await request.json()
+    to_email = body.get("to_email")
+    to_name = body.get("to_name", "")
+    subject = body.get("subject", "Message d'Afroboost")
+    message = body.get("message", "")
+    
+    if not to_email:
+        raise HTTPException(status_code=400, detail="to_email requis")
+    if not message:
+        raise HTTPException(status_code=400, detail="message requis")
+    
+    # Vérifier que Resend est configuré
+    if not RESEND_AVAILABLE or not RESEND_API_KEY:
+        logger.warning("Resend non configuré pour les campagnes")
+        return {"success": False, "error": "Resend non configuré"}
+    
+    # Template HTML stylisé
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #d91cd2, #8b5cf6); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Afroboost</h1>
+        </div>
+        <div style="background: #1a1a1a; padding: 30px; color: #ffffff; border-radius: 0 0 12px 12px;">
+            {message.replace(chr(10), '<br>')}
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+            <p style="font-size: 12px; color: #888; text-align: center;">
+                Cet email vous a été envoyé par Afroboost<br>
+                <a href="https://afroboost.ch" style="color: #d91cd2;">afroboost.ch</a>
+            </p>
+        </div>
+    </div>
+    """
+    
+    try:
+        params = {
+            "from": "Afroboost <notifications@afroboosteur.com>",
+            "to": [to_email],
+            "subject": subject,
+            "html": html_content
+        }
+        
+        email_result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Campaign email sent to {to_email}: {email_result}")
+        return {"success": True, "email_id": email_result.get("id"), "to": to_email}
+    except Exception as e:
+        logger.error(f"Campaign email failed: {str(e)}")
+        return {"success": False, "error": str(e)}
+
 @api_router.post("/push/send")
 async def send_push_to_participant(request: Request):
     """
