@@ -3437,9 +3437,13 @@ async def send_campaign_email(request: Request):
         thumbnail_url = None
         click_url = media_url
         
-        # Vérifier si c'est un lien média interne (afroboosteur.com/v/slug ou /v/slug)
+        # Vérifier si c'est un lien média interne
+        # Formats supportés: /v/slug, /api/share/slug, afroboosteur.com/v/slug, afroboosteur.com/api/share/slug
         slug = None
-        if '/v/' in media_url:
+        if '/api/share/' in media_url:
+            # Extraire le slug: afroboosteur.com/api/share/my-slug -> my-slug
+            slug = media_url.split('/api/share/')[-1].split('?')[0].split('#')[0].strip('/')
+        elif '/v/' in media_url:
             # Extraire le slug: afroboosteur.com/v/my-slug -> my-slug
             slug = media_url.split('/v/')[-1].split('?')[0].split('#')[0].strip('/')
         
@@ -3448,7 +3452,7 @@ async def send_campaign_email(request: Request):
             media_link = await db.media_links.find_one({"slug": slug.lower()}, {"_id": 0})
             if media_link:
                 thumbnail_url = media_link.get("thumbnail") or media_link.get("custom_thumbnail")
-                click_url = f"https://afroboosteur.com/v/{slug}"
+                click_url = f"https://afroboosteur.com/api/share/{slug}"  # Utiliser l'URL de partage avec OG
                 logger.info(f"Media link found for slug {slug}: thumbnail={thumbnail_url}")
             else:
                 logger.warning(f"Media link not found for slug: {slug}")
