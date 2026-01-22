@@ -3473,46 +3473,34 @@ async def send_campaign_email(request: Request):
             # URL externe directe (image)
             thumbnail_url = media_url
         
-        # Générer le HTML de l'image cliquable - ULTRA SIMPLE
+        # Générer le HTML de l'image cliquable - MINIMALISTE
         if thumbnail_url:
-            # S'assurer que l'URL est en HTTPS
             if thumbnail_url.startswith('http://'):
                 thumbnail_url = thumbnail_url.replace('http://', 'https://')
             
-            media_html = f'''<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
-<tr><td align="center">
-<a href="{click_url}"><img src="{thumbnail_url}" width="500" style="max-width:100%;border-radius:8px;" alt="Vidéo"></a>
-</td></tr>
-<tr><td align="center" style="padding-top:15px;">
-<a href="{click_url}" style="display:inline-block;padding:14px 30px;background:#d91cd2;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:bold;">VOIR LA VIDÉO</a>
-</td></tr>
-</table>'''
+            media_html = f'''<p style="text-align:center;margin:0 0 15px 0;">
+<a href="{click_url}"><img src="{thumbnail_url}" width="480" style="max-width:100%;border-radius:8px;" alt=""></a>
+</p>
+<p style="text-align:center;margin:0 0 20px 0;">
+<a href="{click_url}" style="display:inline-block;padding:14px 35px;background:#d91cd2;color:#fff;text-decoration:none;border-radius:25px;font-family:Arial;font-weight:bold;">VOIR LA VIDÉO</a>
+</p>'''
     
-    # Template HTML ULTRA LÉGER pour emails
+    # Template Email MINIMALISTE - Évite l'onglet Promotions
     html_content = f'''<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#000;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#000;">
-<tr><td align="center" style="padding:20px;">
-<table width="600" cellpadding="0" cellspacing="0" border="0">
-<tr><td style="background:#d91cd2;padding:15px;text-align:center;">
-<span style="color:#fff;font-family:Arial;font-size:22px;font-weight:bold;">Afroboost</span>
-</td></tr>
-<tr><td style="background:#1a1a1a;padding:25px;">
+<html><body style="margin:0;padding:20px;background:#0c0014;font-family:Arial,sans-serif;">
+<div style="max-width:550px;margin:0 auto;background:#0c0014;">
+<p style="text-align:center;margin:0 0 20px 0;">
+<a href="https://afroboosteur.com" style="color:#d91cd2;font-size:20px;font-weight:bold;text-decoration:none;">Afroboost</a>
+</p>
 {media_html}
-<p style="color:#fff;font-family:Arial;font-size:15px;line-height:1.5;margin:0;">
+<p style="color:#fff;font-size:15px;line-height:1.6;margin:0 0 20px 0;">
 {message.replace(chr(10), '<br>')}
 </p>
-<p style="color:#666;font-family:Arial;font-size:11px;text-align:center;margin-top:20px;">
+<p style="color:#666;font-size:11px;text-align:center;margin-top:30px;">
 <a href="https://afroboosteur.com" style="color:#d91cd2;">afroboosteur.com</a>
 </p>
-</td></tr>
-</table>
-</td></tr>
-</table>
-</body>
-</html>'''
+</div>
+</body></html>'''
     
     try:
         params = {
