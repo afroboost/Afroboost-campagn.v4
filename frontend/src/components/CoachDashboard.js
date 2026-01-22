@@ -149,7 +149,7 @@ const performWhatsAppSend = async (phoneNumber, message, twilioConfig) => {
   }
 };
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// API avec préfixe /api
 const API = `${BACKEND_URL}/api`;
 
 // Weekdays mapping for multi-language support
