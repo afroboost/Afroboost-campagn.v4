@@ -2160,10 +2160,16 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
       
       console.log("ENVOI A:", contact.email);
       
-      // === BYPASS BACKEND - ENVOI DIRECT DEPUIS LE NAVIGATEUR ===
-      const ok = await envoyerEmailDirect(contact.email, newCampaign.message);
+      // === ENVOI VIA BACKEND RESEND ===
+      const result = await performEmailSend(
+        contact.email, 
+        contact.name || 'Client', 
+        newCampaign.name || 'Afroboost - Message',
+        newCampaign.message,
+        newCampaign.mediaUrl || null
+      );
       
-      if (ok) {
+      if (result.success) {
         results.sent++;
       } else {
         results.failed++;
