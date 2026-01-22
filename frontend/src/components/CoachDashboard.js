@@ -81,38 +81,6 @@ const performEmailSend = async (destination, recipientName = 'Client', subject =
     return { success: false, error: error.message };
   }
 };
-      debug: `EMAILJS_DEBUG: OK - ${response.status}`
-    };
-    
-  } catch (error) {
-    // === SUPPRESSION DU CRASH ===
-    // Capturer TOUTES les erreurs y compris DataCloneError
-    
-    const errorName = error?.name || 'Unknown';
-    const errorMessage = error?.text || error?.message || 'Erreur inconnue';
-    
-    console.error('EMAILJS_DEBUG: ÉCHEC -', errorName);
-    console.error('EMAILJS_DEBUG: Message =', errorMessage);
-    console.error('EMAILJS_DEBUG: Stack =', error?.stack?.substring(0, 200));
-    
-    // Vérifier si c'est une erreur PostHog/DataClone
-    if (errorName === 'DataCloneError' || errorMessage.includes('clone')) {
-      console.warn('EMAILJS_DEBUG: Erreur PostHog détectée - L\'email a peut-être été envoyé malgré l\'erreur');
-      return { 
-        success: false, 
-        error: 'PostHog DataCloneError - vérifier la boîte mail',
-        postHogBlocked: true,
-        debug: 'EMAILJS_DEBUG: PostHog blocking'
-      };
-    }
-    
-    return { 
-      success: false, 
-      error: errorMessage,
-      debug: `EMAILJS_DEBUG: ÉCHEC - ${errorName}: ${errorMessage}`
-    };
-  }
-};
 
 /**
  * FONCTION AUTONOME D'ENVOI WHATSAPP VIA TWILIO
