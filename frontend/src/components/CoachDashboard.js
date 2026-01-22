@@ -5963,30 +5963,36 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                               style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
                               data-testid="coach-message-input"
                             />
+                            {/* BOUTON ENVOI ULTRA-SIMPLE - ID UNIQUE */}
                             <button
+                              id="final-send-btn"
                               type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('📤 Bouton envoi cliqué, message:', coachMessage);
-                                if (coachMessage.trim()) {
+                              onClick={() => {
+                                console.log("ACTION: Envoi déclenché par le bouton");
+                                console.log("ACTION: Message =", coachMessage);
+                                if (coachMessage && coachMessage.trim()) {
                                   sendCoachMessage();
+                                } else {
+                                  alert("Veuillez écrire un message");
                                 }
                               }}
-                              disabled={!coachMessage.trim()}
-                              className="px-4 py-2 rounded-lg text-sm font-medium"
                               style={{ 
-                                background: coachMessage.trim() ? 'linear-gradient(135deg, #d91cd2, #8b5cf6)' : 'rgba(255,255,255,0.1)',
-                                color: '#fff',
-                                opacity: coachMessage.trim() ? 1 : 0.5,
-                                cursor: coachMessage.trim() ? 'pointer' : 'not-allowed',
-                                minWidth: '48px',
-                                minHeight: '40px'
+                                background: '#d91cd2',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                padding: '10px 20px',
+                                fontSize: '16px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                zIndex: 9999,
+                                position: 'relative',
+                                minWidth: '60px',
+                                minHeight: '44px'
                               }}
                               data-testid="send-coach-message-btn"
-                              title="Envoyer le message"
                             >
-                              <span style={{ pointerEvents: 'none' }}>📤</span>
+                              📤
                             </button>
                           </div>
                           
