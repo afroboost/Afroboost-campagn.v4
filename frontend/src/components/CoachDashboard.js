@@ -3867,7 +3867,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                   </div>
                 </div>
                 <p className="text-xs mt-3" style={{ color: 'rgba(139, 92, 246, 0.7)' }}>
-                  💡 Conseil: Configurez EmailJS dans l'onglet Campagnes pour activer les notifications email.
+                  💡 Les emails sont envoyés automatiquement via Resend depuis @afroboosteur.com
                 </p>
               </div>
 
