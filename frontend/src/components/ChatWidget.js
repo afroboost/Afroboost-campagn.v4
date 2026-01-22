@@ -273,6 +273,11 @@ export const ChatWidget = () => {
           if (clientData.participantId) {
             setParticipantId(clientData.participantId);
           }
+          // Vérifier si c'est le coach
+          if (clientData.email.toLowerCase() === COACH_EMAIL.toLowerCase()) {
+            setIsCoachMode(true);
+            console.log('🏋️ Mode Coach activé depuis le widget');
+          }
           console.log(`🎉 Client reconnu: ${clientData.firstName}`);
         }
       } catch (err) {
@@ -297,6 +302,68 @@ export const ChatWidget = () => {
       setIsOpen(true);
     }
   }, []);
+
+  // === MODE COACH: Charger les sessions actives ===
+  const loadCoachSessions = async () => {
+    try {
+      const res = await axios.get(`${API}/chat/sessions`);
+      // Filtrer les sessions non supprimées avec des messages récents
+      const activeSessions = res.data.filter(s => !s.is_deleted);
+      setCoachSessions(activeSessions);
+    } catch (err) {
+      console.error('Error loading coach sessions:', err);
+    }
+  };
+
+  // === MODE COACH: Charger les messages d'une session ===
+  const loadCoachSessionMessages = async (session) => {
+    setSelectedCoachSession(session);
+    try {
+      const res = await axios.get(`${API}/chat/sessions/${session.id}/messages`);
+      const formattedMessages = res.data.map(m => ({
+        id: m.id,
+        type: m.sender_type === 'user' ? 'user' : m.sender_type === 'coach' ? 'coach' : 'ai',
+        text: m.content,
+        sender: m.sender_name,
+        senderId: m.sender_id
+      }));
+      setMessages(formattedMessages);
+      setLastMessageCount(formattedMessages.length);
+    } catch (err) {
+      console.error('Error loading session messages:', err);
+    }
+  };
+
+  // === MODE COACH: Envoyer une réponse ===
+  const sendCoachResponse = async () => {
+    if (!selectedCoachSession || !inputMessage.trim()) return;
+    
+    setIsLoading(true);
+    try {
+      await axios.post(`${API}/chat/coach-response`, {
+        session_id: selectedCoachSession.id,
+        message: inputMessage.trim(),
+        coach_name: 'Coach'
+      });
+      setInputMessage('');
+      // Recharger les messages
+      await loadCoachSessionMessages(selectedCoachSession);
+      playNotificationSound('message');
+    } catch (err) {
+      console.error('Error sending coach response:', err);
+      alert('Erreur lors de l\'envoi du message');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Charger les sessions quand le mode coach est activé
+  useEffect(() => {
+    if (isCoachMode && isOpen) {
+      loadCoachSessions();
+      setStep('coach');
+    }
+  }, [isCoachMode, isOpen]);
 
   // Scroll vers le bas des messages
   useEffect(() => {
