@@ -5809,13 +5809,23 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                               id="final-send-btn"
                               type="button"
                               onClick={() => {
-                                console.log("ACTION: Envoi déclenché par le bouton");
-                                console.log("ACTION: Message =", coachMessage);
-                                if (coachMessage && coachMessage.trim()) {
-                                  sendCoachMessage();
-                                } else {
-                                  alert("Veuillez écrire un message");
+                                console.log("=== BOUTON ENVOI CLIQUÉ ===");
+                                console.log("Message:", coachMessage);
+                                console.log("Session sélectionnée:", selectedSession);
+                                console.log("Session ID:", selectedSession?.id);
+                                
+                                if (!selectedSession) {
+                                  alert("❌ Aucune conversation sélectionnée");
+                                  return;
                                 }
+                                
+                                if (!coachMessage || !coachMessage.trim()) {
+                                  alert("❌ Veuillez écrire un message");
+                                  return;
+                                }
+                                
+                                console.log("=== ENVOI DU MESSAGE ===");
+                                sendCoachMessage();
                               }}
                               style={{ 
                                 background: '#d91cd2',
