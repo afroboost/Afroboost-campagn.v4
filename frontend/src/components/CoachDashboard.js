@@ -1275,7 +1275,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
       const response = await axios.post(`${API}/chat/coach-response`, {
         session_id: sid,
         message: messageContent,
-        coach_name: user?.name || 'Coach'
+        coach_name: coachUser?.name || 'Coach'
       });
       
       // 5. Si succès, vider le champ et recharger
