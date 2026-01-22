@@ -2285,11 +2285,12 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
       .filter(c => c.phone)
       .map(c => ({ phone: c.phone, name: c.name }));
 
-    const hasEmail = isEmailJSConfigured() && emailContacts.length > 0;
+    // Resend est toujours configuré côté serveur
+    const hasEmail = emailContacts.length > 0;
     const hasWhatsApp = isWhatsAppConfigured() && phoneContacts.length > 0;
 
     if (!hasEmail && !hasWhatsApp) {
-      alert('⚠️ Aucun canal configuré ou aucun contact disponible.\n\nConfigurez EmailJS et/ou WhatsApp API.');
+      alert('⚠️ Aucun contact avec email ou téléphone disponible.');
       return;
     }
 
