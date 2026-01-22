@@ -1251,7 +1251,12 @@ export const ChatWidget = () => {
                     data-testid="chat-input"
                   />
                   <button
-                    onClick={handleSendMessage}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSendMessage();
+                    }}
                     disabled={isLoading || !inputMessage.trim()}
                     style={{
                       width: '40px',
@@ -1259,7 +1264,7 @@ export const ChatWidget = () => {
                       borderRadius: '50%',
                       background: '#25D366',
                       border: 'none',
-                      cursor: isLoading ? 'wait' : 'pointer',
+                      cursor: isLoading || !inputMessage.trim() ? 'not-allowed' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1268,7 +1273,7 @@ export const ChatWidget = () => {
                     }}
                     data-testid="chat-send-btn"
                   >
-                    <SendIcon />
+                    <span style={{ pointerEvents: 'none' }}><SendIcon /></span>
                   </button>
                 </div>
               </>
