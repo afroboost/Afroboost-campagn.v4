@@ -3459,7 +3459,7 @@ async def send_campaign_email(request: Request):
             media_link = await db.media_links.find_one({"slug": slug.lower()}, {"_id": 0})
             if media_link:
                 thumbnail_url = media_link.get("thumbnail") or media_link.get("custom_thumbnail")
-                click_url = f"https://afroboosteur.com/api/share/{slug}"  # Utiliser l'URL de partage avec OG
+                click_url = f"https://afroboosteur.com/v/{slug}"  # URL du lecteur frontend
                 logger.info(f"Media link found for slug {slug}: thumbnail={thumbnail_url}")
             else:
                 logger.warning(f"Media link not found for slug: {slug}")
