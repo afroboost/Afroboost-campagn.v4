@@ -2070,8 +2070,16 @@ function App() {
         setShowCoachLogin(true);
       }
     }
+    // Check for /v/:slug URL (Media Viewer)
+    if (path.startsWith('/v/')) {
+      const slug = path.replace('/v/', '').toLowerCase();
+      if (slug) {
+        setMediaSlug(slug);
+      }
+    }
   }, []);
 
+  const [mediaSlug, setMediaSlug] = useState(null);
   const [clickCount, setClickCount] = useState(0);
   const [lastClickTime, setLastClickTime] = useState(0);
 
