@@ -889,6 +889,22 @@ Les fonctions d'envoi sont maintenant **au niveau module** (hors React) pour év
    - Extraction YouTube testée pour tous les formats d'URL
    - Flux complet de bout en bout vérifié
 
+### Intégration Médias dans Campagnes (22 Jan 2026)
+1. ✅ **Aperçu Thumbnail dans Dashboard**:
+   - Détection automatique des liens internes `/v/slug`
+   - Récupération de la thumbnail via API `/api/media/{slug}/thumbnail`
+   - Affichage de l'aperçu avec badge "📎 Lien média interne détecté"
+
+2. ✅ **Template Email Resend avec Image Cliquable**:
+   - Si `media_url` fourni, extraction du slug et récupération de la thumbnail
+   - Image cliquable avec bordure rose et shadow Afroboost
+   - Bouton "▶️ Voir la vidéo" sous l'image
+   - Compatible avec liens internes (`/v/slug`) et URLs externes
+
+3. ✅ **Correction Bug envoi Email**:
+   - Fonction `envoyerEmailDirect` remplacée par `performEmailSend` (existante)
+   - Paramètre `media_url` ajouté pour inclusion dans les emails
+
 ### UX & CRM Améliorations (21 Jan 2026)
 1. ✅ **Widget Chat Responsive Mobile**:
    - Widget occupe 85vh sur mobile (< 640px) 
