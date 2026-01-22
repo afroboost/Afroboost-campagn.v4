@@ -891,19 +891,37 @@ Les fonctions d'envoi sont maintenant **au niveau module** (hors React) pour év
 
 ### Intégration Médias dans Campagnes (22 Jan 2026)
 1. ✅ **Aperçu Thumbnail dans Dashboard**:
-   - Détection automatique des liens internes `/v/slug`
+   - Détection automatique des liens internes `/v/slug` et `/api/share/slug`
    - Récupération de la thumbnail via API `/api/media/{slug}/thumbnail`
-   - Affichage de l'aperçu avec badge "📎 Lien média interne détecté"
+   - Affichage de l'aperçu avec badge "✅ Lien média interne détecté"
 
 2. ✅ **Template Email Resend avec Image Cliquable**:
    - Si `media_url` fourni, extraction du slug et récupération de la thumbnail
    - Image cliquable avec bordure rose et shadow Afroboost
    - Bouton "▶️ Voir la vidéo" sous l'image
-   - Compatible avec liens internes (`/v/slug`) et URLs externes
+   - Compatible avec liens internes (`/api/share/slug`, `/v/slug`) et URLs externes
 
 3. ✅ **Correction Bug envoi Email**:
    - Fonction `envoyerEmailDirect` remplacée par `performEmailSend` (existante)
    - Paramètre `media_url` ajouté pour inclusion dans les emails
+
+### Aperçus WhatsApp avec OpenGraph (22 Jan 2026)
+1. ✅ **Nouvel endpoint `/api/share/{slug}`**:
+   - URL de partage principale: `https://afroboosteur.com/api/share/{slug}`
+   - Sert les balises OpenGraph COMPLÈTES aux crawlers WhatsApp/Facebook/LinkedIn
+   - Balises: og:title, og:description, og:image (1280x720), og:video, og:url
+   - Twitter Card avec summary_large_image
+   - Redirection automatique vers le lecteur `/v/{slug}` après 1.5s
+
+2. ✅ **Page de partage visuelle**:
+   - Affiche la thumbnail, le titre, la description et le bouton CTA
+   - Style Afroboost (gradient rose/violet)
+   - Compatible avec tous les clients WhatsApp
+
+3. ✅ **Workflow utilisateur simplifié**:
+   - Dashboard → Onglet Médias → Bouton "📤 Partager" (vert)
+   - Copie automatiquement l'URL `/api/share/{slug}` dans le presse-papier
+   - Message explicatif sur l'aperçu WhatsApp
 
 ### UX & CRM Améliorations (21 Jan 2026)
 1. ✅ **Widget Chat Responsive Mobile**:
