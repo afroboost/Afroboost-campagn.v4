@@ -5857,7 +5857,10 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                       <div className="flex-1 min-w-0">
                         <h4 className="text-white font-semibold truncate">{link.title}</h4>
                         <p className="text-purple-400 text-sm mt-1">
-                          afroboosteur.com/v/{link.slug}
+                          📤 afroboosteur.com/api/share/{link.slug}
+                        </p>
+                        <p className="text-white/40 text-xs mt-1">
+                          👁️ Lecteur: /v/{link.slug}
                         </p>
                         <div className="flex items-center gap-4 mt-2 text-white/50 text-xs">
                           <span>👁️ {link.views || 0} vues</span>
@@ -5870,10 +5873,10 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                       <div className="flex sm:flex-col gap-2 flex-shrink-0">
                         <button
                           onClick={() => copyMediaLink(link.slug)}
-                          className="px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium transition-all"
-                          title="Copier le lien"
+                          className="px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-all"
+                          title="Copier le lien de partage (avec aperçu WhatsApp)"
                         >
-                          📋 Copier
+                          📤 Partager
                         </button>
                         <a
                           href={`https://afroboosteur.com/v/${link.slug}`}
