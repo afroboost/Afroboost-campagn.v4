@@ -6052,15 +6052,22 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                               data-testid="coach-message-input"
                             />
                             <button
-                              onClick={sendCoachMessage}
+                              onClick={() => {
+                                console.log('📤 Bouton envoi cliqué, message:', coachMessage);
+                                sendCoachMessage();
+                              }}
                               disabled={!coachMessage.trim()}
-                              className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                              className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-110 active:scale-95"
                               style={{ 
                                 background: coachMessage.trim() ? 'linear-gradient(135deg, #d91cd2, #8b5cf6)' : 'rgba(255,255,255,0.1)',
                                 color: '#fff',
-                                opacity: coachMessage.trim() ? 1 : 0.5
+                                opacity: coachMessage.trim() ? 1 : 0.5,
+                                cursor: coachMessage.trim() ? 'pointer' : 'not-allowed',
+                                minWidth: '48px',
+                                minHeight: '40px'
                               }}
                               data-testid="send-coach-message-btn"
+                              title="Envoyer le message"
                             >
                               📤
                             </button>
