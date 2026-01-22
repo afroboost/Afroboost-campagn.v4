@@ -3463,36 +3463,36 @@ async def send_campaign_email(request: Request):
         # Générer le HTML de l'image cliquable
         if thumbnail_url:
             media_html = f"""
-            <div style="margin: 20px 0; text-align: center;">
-                <a href="{click_url}" target="_blank" style="display: inline-block;">
+            <div style="margin-bottom: 25px; text-align: center;">
+                <a href="{click_url}" target="_blank" style="display: inline-block; text-decoration: none;">
                     <img src="{thumbnail_url}" alt="Voir la vidéo" 
                          style="max-width: 100%; width: 560px; height: auto; border-radius: 12px; 
                                 box-shadow: 0 4px 20px rgba(217, 28, 210, 0.3);
-                                border: 2px solid rgba(217, 28, 210, 0.5);" />
+                                border: 2px solid rgba(217, 28, 210, 0.5); display: block;" />
                 </a>
-                <p style="margin-top: 12px;">
+                <p style="margin-top: 15px; margin-bottom: 0;">
                     <a href="{click_url}" target="_blank" 
-                       style="display: inline-block; padding: 12px 24px; 
+                       style="display: inline-block; padding: 14px 28px; 
                               background: linear-gradient(135deg, #d91cd2, #8b5cf6); 
                               color: white; text-decoration: none; border-radius: 8px;
-                              font-weight: bold; font-size: 14px;">
+                              font-weight: bold; font-size: 16px;">
                         ▶️ Voir la vidéo
                     </a>
                 </p>
             </div>
             """
     
-    # Template HTML stylisé avec média
+    # Template HTML stylisé avec média EN HAUT
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #d91cd2, #8b5cf6); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
             <h1 style="color: white; margin: 0; font-size: 24px;">Afroboost</h1>
         </div>
         <div style="background: #1a1a1a; padding: 30px; color: #ffffff; border-radius: 0 0 12px 12px;">
+            {media_html}
             <div style="font-size: 16px; line-height: 1.6;">
                 {message.replace(chr(10), '<br>')}
             </div>
-            {media_html}
             <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
             <p style="font-size: 12px; color: #888; text-align: center;">
                 Cet email vous a été envoyé par Afroboost<br>
