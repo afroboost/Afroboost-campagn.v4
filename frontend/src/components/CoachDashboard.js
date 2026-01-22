@@ -4752,112 +4752,47 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
               </div>
             )}
 
-            {/* === PANNEAU DE CONFIGURATION EMAILJS === */}
-            {showEmailJSConfig && (
-              <div className="mb-8 p-5 rounded-xl glass border-2 border-blue-500/50">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-white font-semibold flex items-center gap-2">
-                    ⚙️ Configuration EmailJS
-                  </h3>
-                  <button 
-                    type="button"
-                    onClick={() => setShowEmailJSConfig(false)}
-                    className="text-white/60 hover:text-white"
-                  >
-                    ×
-                  </button>
-                </div>
-                
-                <p className="text-xs text-white/60 mb-4">
-                  Créez un compte gratuit sur <a href="https://www.emailjs.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">emailjs.com</a>, 
-                  puis ajoutez vos clés ci-dessous. Ces informations sont stockées localement et ne quittent jamais votre navigateur.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="block mb-1 text-white text-xs">Service ID</label>
-                    <input 
-                      type="text" 
-                      value={emailJSConfig.serviceId}
-                      onChange={e => setEmailJSConfig({...emailJSConfig, serviceId: e.target.value})}
-                      className="w-full px-3 py-2 rounded-lg neon-input text-sm"
-                      placeholder="service_xxxxxxx"
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-1 text-white text-xs">Template ID</label>
-                    <input 
-                      type="text" 
-                      value={emailJSConfig.templateId}
-                      onChange={e => setEmailJSConfig({...emailJSConfig, templateId: e.target.value})}
-                      className="w-full px-3 py-2 rounded-lg neon-input text-sm"
-                      placeholder="template_xxxxxxx"
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-1 text-white text-xs">Public Key</label>
-                    <input 
-                      type="text" 
-                      value={emailJSConfig.publicKey}
-                      onChange={e => setEmailJSConfig({...emailJSConfig, publicKey: e.target.value})}
-                      className="w-full px-3 py-2 rounded-lg neon-input text-sm"
-                      placeholder="xxxxxxxxxxxxxxx"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-3 items-center">
-                  <button 
-                    type="button"
-                    onClick={handleSaveEmailJSConfig}
-                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
-                  >
-                    💾 Sauvegarder
-                  </button>
-                  
-                  {/* Test EmailJS */}
-                  <div className="flex items-center gap-2 flex-1">
-                    <input 
-                      type="email"
-                      value={testEmailAddress}
-                      onChange={e => setTestEmailAddress(e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-lg neon-input text-sm"
-                      placeholder="Email de test..."
-                      data-testid="test-email-input"
-                    />
-                    <button 
-                      type="button"
-                      onClick={(e) => handleTestEmailJS(e)}
-                      disabled={testEmailStatus === 'sending' || !emailJSConfig.serviceId}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        testEmailStatus === 'success' ? 'bg-green-600' :
-                        testEmailStatus === 'error' ? 'bg-red-600' :
-                        testEmailStatus === 'sending' ? 'bg-yellow-600' :
-                        'bg-purple-600 hover:bg-purple-700'
-                      } text-white disabled:opacity-50`}
-                      data-testid="test-email-btn"
-                    >
-                      {testEmailStatus === 'sending' ? '⏳...' :
-                       testEmailStatus === 'success' ? '✅ Envoyé!' :
-                       testEmailStatus === 'error' ? '❌ Erreur' :
-                       '🧪 Tester'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-4 p-3 rounded-lg bg-blue-900/20 border border-blue-500/20">
-                  <p className="text-xs text-white/70">
-                    <strong>📋 Template EmailJS requis :</strong><br/>
-                    Variables à inclure dans votre template : 
-                    <code className="text-blue-400 mx-1">{'{{to_email}}'}</code>
-                    <code className="text-blue-400 mx-1">{'{{to_name}}'}</code>
-                    <code className="text-blue-400 mx-1">{'{{subject}}'}</code>
-                    <code className="text-blue-400 mx-1">{'{{message}}'}</code>
-                    <code className="text-blue-400 mx-1">{'{{from_name}}'}</code>
-                  </p>
-                </div>
+            {/* === SECTION TEST EMAIL RESEND === */}
+            <div className="mb-8 p-5 rounded-xl glass border-2 border-blue-500/50">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  📧 Test Email (Resend)
+                  <span className="text-green-400 text-xs ml-2">✓ Configuré</span>
+                </h3>
               </div>
-            )}
+              
+              <p className="text-xs text-white/60 mb-4">
+                Les emails sont envoyés depuis <strong>notifications@afroboosteur.com</strong> via Resend.
+              </p>
+
+              <div className="flex items-center gap-2">
+                <input 
+                  type="email"
+                  value={testEmailAddress}
+                  onChange={e => setTestEmailAddress(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-lg neon-input text-sm"
+                  placeholder="Email de test..."
+                  data-testid="test-email-input"
+                />
+                <button 
+                  type="button"
+                  onClick={(e) => handleTestEmail(e)}
+                  disabled={testEmailStatus === 'sending'}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    testEmailStatus === 'success' ? 'bg-green-600' :
+                    testEmailStatus === 'error' ? 'bg-red-600' :
+                    testEmailStatus === 'sending' ? 'bg-yellow-600' :
+                    'bg-purple-600 hover:bg-purple-700'
+                  } text-white disabled:opacity-50`}
+                  data-testid="test-email-btn"
+                >
+                  {testEmailStatus === 'sending' ? '⏳...' :
+                   testEmailStatus === 'success' ? '✅ Envoyé!' :
+                   testEmailStatus === 'error' ? '❌ Erreur' :
+                   '🧪 Tester'}
+                </button>
+              </div>
+            </div>
 
             {/* === PANNEAU DE CONFIGURATION WHATSAPP API === */}
             {showWhatsAppConfig && (
