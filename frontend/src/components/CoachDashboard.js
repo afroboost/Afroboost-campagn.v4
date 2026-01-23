@@ -5408,7 +5408,20 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
 
             {/* New Campaign Form */}
             <form onSubmit={createCampaign} className="mb-8 p-5 rounded-xl glass">
-              <h3 className="text-white font-semibold mb-4">Nouvelle Campagne</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-semibold">
+                  {editingCampaignId ? '✏️ Modifier la Campagne' : 'Nouvelle Campagne'}
+                </h3>
+                {editingCampaignId && (
+                  <button 
+                    type="button" 
+                    onClick={cancelEditCampaign}
+                    className="px-3 py-1 rounded text-xs bg-gray-600 hover:bg-gray-700 text-white"
+                  >
+                    ❌ Annuler
+                  </button>
+                )}
+              </div>
               
               {/* Campaign Name */}
               <div className="mb-4">
