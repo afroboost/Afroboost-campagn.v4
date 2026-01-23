@@ -1769,11 +1769,74 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   };
 
-  // Create campaign (supports multiple schedule slots)
+  // === ÉDITION CAMPAGNE ===
+  // Pré-remplir le formulaire avec les données d'une campagne existante
+  const handleEditCampaign = (campaign) => {
+    setEditingCampaignId(campaign.id);
+    setNewCampaign({
+      name: campaign.name || "",
+      message: campaign.message || "",
+      mediaUrl: campaign.mediaUrl || "",
+      mediaFormat: campaign.mediaFormat || "16:9",
+      targetType: campaign.targetType || "all",
+      selectedContacts: campaign.selectedContacts || [],
+      channels: campaign.channels || { whatsapp: true, email: false, instagram: false },
+      scheduleSlots: [] // On ne peut pas modifier les schedules existants
+    });
+    // Pré-sélectionner les contacts si mode "selected"
+    if (campaign.targetType === "selected" && campaign.selectedContacts) {
+      setSelectedContactsForCampaign(campaign.selectedContacts);
+    }
+    // Scroll vers le formulaire
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Annuler l'édition et réinitialiser le formulaire
+  const cancelEditCampaign = () => {
+    setEditingCampaignId(null);
+    setNewCampaign({ 
+      name: "", message: "", mediaUrl: "", mediaFormat: "16:9", 
+      targetType: "all", selectedContacts: [], 
+      channels: { whatsapp: true, email: false, instagram: false }, 
+      scheduleSlots: [] 
+    });
+    setSelectedContactsForCampaign([]);
+  };
+
+  // Create OR Update campaign (supports multiple schedule slots)
   const createCampaign = async (e) => {
     e.preventDefault();
     if (!newCampaign.name || !newCampaign.message) return;
     
+    // === MODE ÉDITION : Mise à jour d'une campagne existante ===
+    if (editingCampaignId) {
+      try {
+        const updateData = {
+          name: newCampaign.name,
+          message: newCampaign.message,
+          mediaUrl: newCampaign.mediaUrl,
+          mediaFormat: newCampaign.mediaFormat,
+          targetType: newCampaign.targetType,
+          selectedContacts: newCampaign.targetType === "selected" ? selectedContactsForCampaign : [],
+          channels: newCampaign.channels
+        };
+        const res = await axios.put(`${API}/campaigns/${editingCampaignId}`, updateData);
+        setCampaigns(campaigns.map(c => c.id === editingCampaignId ? res.data : c));
+        addCampaignLog(editingCampaignId, `Campagne "${newCampaign.name}" modifiée avec succès`, 'success');
+        
+        // Reset form et mode édition
+        cancelEditCampaign();
+        alert(`✅ Campagne "${newCampaign.name}" modifiée avec succès !`);
+        return;
+      } catch (err) {
+        console.error("Error updating campaign:", err);
+        addCampaignLog(editingCampaignId, `Erreur modification: ${err.message}`, 'error');
+        alert(`❌ Erreur lors de la modification: ${err.message}`);
+        return;
+      }
+    }
+    
+    // === MODE CRÉATION : Nouvelle campagne ===
     const scheduleSlots = newCampaign.scheduleSlots;
     const isImmediate = scheduleSlots.length === 0;
     
