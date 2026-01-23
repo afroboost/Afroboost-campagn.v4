@@ -1,16 +1,27 @@
 /**
- * MediaViewer - Lecteur Afroboost Mode Cinéma V2
- * Spécification utilisateur: Design cinéma, bouton CTA #E91E63, lecteur white-label
+ * MediaViewer - Lecteur Afroboost Mode Cinéma V3
+ * Player HTML5 natif sans marquage externe
+ * Spécification: Design cinéma, bouton CTA #E91E63, AUCUN logo tiers
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const API = process.env.REACT_APP_BACKEND_URL || '';
+
+// Détecte si l'URL est une vidéo directe (MP4, WebM, etc.)
+const isDirectVideoUrl = (url) => {
+  if (!url) return false;
+  const videoExtensions = ['.mp4', '.webm', '.mov', '.m4v', '.ogv', '.ogg'];
+  const lowerUrl = url.toLowerCase();
+  return videoExtensions.some(ext => lowerUrl.includes(ext));
+};
 
 const MediaViewer = ({ slug }) => {
   const [media, setMedia] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     const loadMedia = async () => {
@@ -28,6 +39,18 @@ const MediaViewer = ({ slug }) => {
     };
     if (slug) loadMedia();
   }, [slug]);
+
+  // Gérer le play/pause
+  const handlePlayClick = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
 
   // État de chargement - Mode Cinéma
   if (loading) {
@@ -59,10 +82,9 @@ const MediaViewer = ({ slug }) => {
     );
   }
 
-  // URL YouTube WHITE-LABEL - Paramètres pour masquer tout le branding YouTube
-  const youtubeUrl = media.youtube_id 
-    ? `https://www.youtube.com/embed/${media.youtube_id}?modestbranding=1&rel=0&iv_load_policy=3&controls=1&playsinline=1&showinfo=0&disablekb=1&fs=1&cc_load_policy=0&origin=${encodeURIComponent(window.location.origin)}`
-    : media.video_url;
+  // Détermine le type de lecteur à utiliser
+  const hasDirectVideo = isDirectVideoUrl(media.video_url);
+  const thumbnailUrl = media.thumbnail || (media.youtube_id ? `https://img.youtube.com/vi/${media.youtube_id}/maxresdefault.jpg` : null);
 
   return (
     <div style={styles.page}>
@@ -79,20 +101,66 @@ const MediaViewer = ({ slug }) => {
         {/* Titre - Au-dessus de la vidéo */}
         <h1 style={styles.title} data-testid="media-title">{media.title || 'Sans titre'}</h1>
 
-        {/* Lecteur Vidéo - Mode Cinéma 16:9 avec overlay anti-clic */}
+        {/* Lecteur Vidéo HTML5 Natif - Mode Cinéma 16:9 */}
         <div style={styles.videoWrapper} data-testid="video-container">
-          <iframe
-            src={youtubeUrl}
-            title={media.title || 'Vidéo Afroboost'}
-            style={styles.videoIframe}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            allowFullScreen
-          />
-          {/* Overlay supérieur - bloque le titre et bouton "Share" YouTube */}
-          <div style={styles.videoOverlayTop}></div>
-          {/* Overlay inférieur - bloque "Watch on YouTube" */}
-          <div style={styles.videoOverlayBottom}></div>
+          {hasDirectVideo ? (
+            /* Player HTML5 natif pour vidéos directes */
+            <video
+              ref={videoRef}
+              src={media.video_url}
+              poster={thumbnailUrl}
+              style={styles.videoPlayer}
+              controls
+              controlsList="nodownload noremoteplayback"
+              playsInline
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              data-testid="html5-video"
+            >
+              Votre navigateur ne supporte pas la lecture vidéo.
+            </video>
+          ) : (
+            /* Player personnalisé avec thumbnail pour YouTube/autres */
+            <>
+              {/* Thumbnail comme fond */}
+              <div 
+                style={{
+                  ...styles.thumbnailContainer,
+                  backgroundImage: `url(${thumbnailUrl})`,
+                }}
+              >
+                {/* Overlay sombre pour meilleur contraste */}
+                <div style={styles.thumbnailOverlay}></div>
+                
+                {/* Bouton Play central personnalisé */}
+                {!isPlaying && (
+                  <button 
+                    onClick={handlePlayClick}
+                    style={styles.playButton}
+                    data-testid="play-button"
+                    aria-label="Lire la vidéo"
+                  >
+                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                      <circle cx="40" cy="40" r="38" fill="#E91E63" fillOpacity="0.95"/>
+                      <path d="M32 25L58 40L32 55V25Z" fill="white"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+              
+              {/* Player YouTube caché - activé au clic */}
+              {isPlaying && (
+                <iframe
+                  src={`https://www.youtube.com/embed/${media.youtube_id}?autoplay=1&modestbranding=1&rel=0&iv_load_policy=3&controls=1&playsinline=1&showinfo=0`}
+                  title={media.title || 'Vidéo Afroboost'}
+                  style={styles.videoIframe}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                  allowFullScreen
+                />
+              )}
+            </>
+          )}
         </div>
 
         {/* Description - En dessous de la vidéo, supporte les sauts de ligne */}
@@ -102,7 +170,7 @@ const MediaViewer = ({ slug }) => {
           </p>
         )}
 
-        {/* Bouton CTA ROSE #E91E63 - Après la description */}
+        {/* Bouton CTA ROSE #E91E63 - Point focal principal */}
         {media.cta_text && media.cta_link && (
           <div style={styles.ctaContainer} data-testid="cta-section">
             <a
