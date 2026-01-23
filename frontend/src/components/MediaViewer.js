@@ -89,8 +89,10 @@ const MediaViewer = ({ slug }) => {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen
           />
-          {/* Overlay transparent pour bloquer les clics vers YouTube (partie haute) */}
+          {/* Overlay supérieur - bloque le titre et bouton "Share" YouTube */}
           <div style={styles.videoOverlayTop}></div>
+          {/* Overlay inférieur - bloque "Watch on YouTube" */}
+          <div style={styles.videoOverlayBottom}></div>
         </div>
 
         {/* Description - En dessous de la vidéo, supporte les sauts de ligne */}
