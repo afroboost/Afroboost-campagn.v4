@@ -217,7 +217,7 @@ const MediaViewer = ({ slug }) => {
   );
 };
 
-// Styles V2 - Mode Cinéma avec bouton CTA #E91E63
+// Styles V3 - Mode Cinéma avec Player HTML5 natif
 const styles = {
   // Page - Fond sombre "cinéma"
   page: {
@@ -322,6 +322,52 @@ const styles = {
     overflow: 'hidden',
     boxShadow: '0 0 30px rgba(233, 30, 99, 0.3)',
   },
+  
+  // Player HTML5 natif
+  videoPlayer: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    backgroundColor: '#000',
+  },
+  
+  // Thumbnail container pour YouTube
+  thumbnailContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  },
+  
+  // Overlay sombre sur la thumbnail
+  thumbnailOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  
+  // Bouton Play personnalisé
+  playButton: {
+    position: 'relative',
+    zIndex: 10,
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'transform 0.2s ease',
+    padding: 0,
+  },
+  
+  // iframe YouTube (caché jusqu'au clic)
   videoIframe: {
     position: 'absolute',
     top: 0,
@@ -329,30 +375,6 @@ const styles = {
     width: '100%',
     height: '100%',
     border: 'none',
-  },
-  // Overlay pour bloquer le lien "Watch on YouTube" en haut
-  videoOverlayTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '55px',
-    background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%)',
-    cursor: 'default',
-    zIndex: 10,
-    pointerEvents: 'auto',
-  },
-  // Overlay inférieur pour masquer "Watch on YouTube"
-  videoOverlayBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '60px',
-    background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)',
-    cursor: 'default',
-    zIndex: 10,
-    pointerEvents: 'auto',
   },
   
   // Description - Texte blanc, supporte les sauts de ligne
@@ -367,14 +389,14 @@ const styles = {
     padding: '0 10px',
   },
   
-  // CTA Button - ROSE #E91E63 obligatoire
+  // CTA Button - ROSE #E91E63 - Point focal
   ctaContainer: {
     textAlign: 'center',
     marginBottom: '35px',
   },
   ctaButton: {
     display: 'inline-block',
-    padding: '18px 50px',
+    padding: '20px 55px',
     backgroundColor: '#E91E63',
     color: '#FFFFFF',
     textDecoration: 'none',
@@ -382,7 +404,9 @@ const styles = {
     fontSize: '18px',
     fontWeight: 'bold',
     transition: 'transform 0.2s, box-shadow 0.2s',
-    boxShadow: '0 4px 20px rgba(233, 30, 99, 0.5)',
+    boxShadow: '0 6px 25px rgba(233, 30, 99, 0.5)',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
   },
   
   // Share
