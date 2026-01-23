@@ -3796,6 +3796,33 @@ async def get_media_opengraph(slug: str):
     from fastapi.responses import HTMLResponse
     return HTMLResponse(content=html, status_code=200)
 
+@api_router.get("/go/{slug}")
+async def redirect_to_media(slug: str):
+    """
+    Endpoint de redirection HTTP 302 vers la page média.
+    Utilisé dans les emails pour garantir une redirection fiable
+    même si le serveur de production n'est pas configuré pour le routage SPA.
+    """
+    # Vérifier que le média existe
+    media = await db.media_links.find_one({"slug": slug.lower()}, {"_id": 0, "title": 1})
+    if not media:
+        raise HTTPException(status_code=404, detail="Média non trouvé")
+    
+    # Incrémenter les vues
+    await db.media_links.update_one(
+        {"slug": slug.lower()},
+        {"$inc": {"views": 1}}
+    )
+    
+    # Déterminer l'URL de destination
+    frontend_base = os.environ.get('FRONTEND_URL', 'https://afroboosteur.com')
+    redirect_url = f"{frontend_base}/v/{slug}"
+    
+    logger.info(f"Redirect /api/go/{slug} -> {redirect_url}")
+    
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=redirect_url, status_code=302)
+
 @api_router.get("/media")
 async def list_media_links():
     """Liste tous les liens média créés"""
