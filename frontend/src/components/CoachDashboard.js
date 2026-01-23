@@ -5701,6 +5701,19 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                           </td>
                           <td className="py-3">
                             <div className="flex gap-2">
+                              {/* Bouton Modifier - Disponible pour draft et scheduled */}
+                              {(campaign.status === 'draft' || campaign.status === 'scheduled') && (
+                                <button 
+                                  type="button"
+                                  onClick={() => handleEditCampaign(campaign)} 
+                                  className="px-3 py-1 rounded text-xs bg-yellow-600 hover:bg-yellow-700"
+                                  data-testid={`edit-campaign-${campaign.id}`}
+                                  title="Modifier la campagne"
+                                >
+                                  ✏️
+                                </button>
+                              )}
+                              {/* Bouton Lancer */}
                               {(campaign.status === 'draft' || campaign.status === 'scheduled') && (
                                 <button 
                                   type="button"
