@@ -1661,19 +1661,41 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     dismissToast(toast.id);
   }, [chatSessions, dismissToast]);
   
-  // Vérifier le statut de permission au chargement
+  // === ÉTAT POUR NOTIFICATION IA ===
+  const [notifyOnAiResponse, setNotifyOnAiResponse] = useState(
+    localStorage.getItem('afroboost_notify_ai') === 'true'
+  );
+  
+  // Sauvegarder la préférence
+  const toggleNotifyOnAiResponse = useCallback(() => {
+    const newValue = !notifyOnAiResponse;
+    setNotifyOnAiResponse(newValue);
+    localStorage.setItem('afroboost_notify_ai', newValue.toString());
+  }, [notifyOnAiResponse]);
+  
+  // Vérifier le statut de permission au chargement ET activer le polling si déjà autorisé
   useEffect(() => {
-    const checkPermission = async () => {
-      const { getNotificationPermissionStatus } = await import('../services/notificationService');
+    const initNotifications = async () => {
+      const { getNotificationPermissionStatus, unlockAudio } = await import('../services/notificationService');
       const status = getNotificationPermissionStatus();
       setNotificationPermission(status);
+      
+      console.log('[NOTIFICATIONS] Statut initial:', status);
       
       // Afficher le banner si permission pas encore demandée
       if (status === 'default') {
         setShowPermissionBanner(true);
+      } else if (status === 'granted') {
+        // Permission déjà accordée - déverrouiller l'audio silencieusement
+        console.log('[NOTIFICATIONS] Permission déjà accordée, polling actif automatiquement');
+        try {
+          await unlockAudio();
+        } catch (e) {
+          // Silencieux - l'audio sera débloqué au premier clic
+        }
       }
     };
-    checkPermission();
+    initNotifications();
   }, []);
   
   // Demander la permission de notification explicitement (appelé par le bouton)
