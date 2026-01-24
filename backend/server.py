@@ -4603,9 +4603,9 @@ def scheduler_loop():
             # HEARTBEAT TOUTES LES 10 SECONDES (visible dans les logs)
             print(f"[DEBUG-DAEMON] Heartbeat - Scan de la DB en cours... ({now_str} UTC)")
             
-            # Chercher les campagnes programmées
+            # Chercher les campagnes programmées (inclut pending_quota pour retry automatique)
             campaigns = list(scheduler_db.campaigns.find(
-                {"status": {"$in": ["scheduled", "sending"]}},
+                {"status": {"$in": ["scheduled", "sending", "pending_quota"]}},
                 {"_id": 0}
             ))
             
