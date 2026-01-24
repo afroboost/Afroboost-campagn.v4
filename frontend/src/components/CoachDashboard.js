@@ -4424,7 +4424,10 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
               
               {/* === DESKTOP VIEW: Layout horizontal === */}
               <div className="hidden md:block">
-              {offers.map((offer, idx) => (
+              {(offersSearch ? offers.filter(o => 
+                o.name?.toLowerCase().includes(offersSearch.toLowerCase()) ||
+                o.description?.toLowerCase().includes(offersSearch.toLowerCase())
+              ) : offers).map((offer, idx) => (
                 <div key={offer.id} className="glass rounded-lg p-4 mb-4">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-3">
