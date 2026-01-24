@@ -3065,17 +3065,22 @@ async def update_chat_session(session_id: str, update: ChatSessionUpdate):
     Met à jour une session de chat.
     Utilisé pour changer le mode (IA/Humain/Communautaire) ou supprimer logiquement.
     """
+    logger.info(f"[DELETE] Mise à jour session {session_id}: {update.model_dump()}")
+    
     update_data = {k: v for k, v in update.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     # Si suppression logique, ajouter la date
     if update_data.get("is_deleted"):
         update_data["deleted_at"] = datetime.now(timezone.utc).isoformat()
+        logger.info(f"[DELETE] Session {session_id} marquée comme supprimée (is_deleted=True)")
     
-    await db.chat_sessions.update_one(
+    result = await db.chat_sessions.update_one(
         {"id": session_id},
         {"$set": update_data}
     )
+    logger.info(f"[DELETE] Résultat update: matched={result.matched_count}, modified={result.modified_count}")
+    
     updated = await db.chat_sessions.find_one({"id": session_id}, {"_id": 0})
     return updated
 
