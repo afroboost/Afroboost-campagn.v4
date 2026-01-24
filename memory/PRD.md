@@ -116,6 +116,7 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 - [x] Template Email V5 Anti-Promotions
 - [x] Fonctionnalité "Modifier une Campagne"
 - [x] Tests automatisés iteration 34
+- [x] **Scheduler de campagnes** (24 Jan 2026) - RÉPARÉ ✅
 
 ### P1 - À faire
 - [ ] **Refactoring CoachDashboard.js** : Extraire composants (>6000 lignes)
@@ -125,6 +126,47 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 - [ ] Dashboard analytics pour le coach
 - [ ] Support upload vidéo direct depuis le dashboard
 - [ ] Manuel utilisateur
+
+---
+
+## Scheduler de Campagnes (24 Jan 2026)
+
+### Fichiers créés
+- `/app/backend/scheduler.py` - Script autonome pour l'envoi programmé
+- `/app/backend/start_scheduler.sh` - Script de démarrage
+
+### Fonctionnalités
+- ✅ **Détection des campagnes programmées** : Status `scheduled` ou `sending`
+- ✅ **Comparaison UTC** : Utilise `datetime.now(timezone.utc)` pour éviter les problèmes de fuseau horaire
+- ✅ **Support multi-dates** : Gère `scheduledAt` (date unique) et `scheduledDates` (tableau)
+- ✅ **Gestion des retries** : 3 tentatives max avant statut `failed`
+- ✅ **Canaux séparés** : Le scheduler gère uniquement les emails (WhatsApp = manuel)
+- ✅ **Mise à jour du statut** : `scheduled` → `completed` ou `failed`
+
+### Usage
+```bash
+# Exécution unique
+python scheduler.py
+
+# Mode test sans envoi
+python scheduler.py --dry-run
+
+# Boucle infinie (toutes les 60s)
+python scheduler.py --loop
+
+# Via script bash
+./start_scheduler.sh           # Mode boucle
+./start_scheduler.sh --once    # Exécution unique
+./start_scheduler.sh --dry-run # Mode test
+```
+
+### Comportement par canal
+- **Email activé** : Le scheduler envoie via `/api/campaigns/send-email`
+- **Email désactivé (WhatsApp-only)** : Le scheduler marque comme `completed` à la date prévue
+
+### Notes importantes
+- Le quota Resend peut bloquer les envois (erreur: "You have reached your daily email sending quota")
+- Le scheduler doit être lancé manuellement ou via cron externe (supervisord en lecture seule)
 
 ---
 
