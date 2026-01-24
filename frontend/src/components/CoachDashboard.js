@@ -271,6 +271,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   const [loadingReservations, setLoadingReservations] = useState(false);
   const [courses, setCourses] = useState([]);
   const [offers, setOffers] = useState([]);
+  const [offersSearch, setOffersSearch] = useState(''); // Recherche locale offres
   const [users, setUsers] = useState([]);
   const [paymentLinks, setPaymentLinks] = useState({ stripe: "", paypal: "", twint: "", coachWhatsapp: "", coachNotificationEmail: "", coachNotificationPhone: "" });
   const [concept, setConcept] = useState({ appName: "Afroboost", description: "", heroImageUrl: "", logoUrl: "", faviconUrl: "", termsText: "", googleReviewsUrl: "", defaultLandingSection: "sessions", externalLink1Title: "", externalLink1Url: "", externalLink2Title: "", externalLink2Url: "", paymentTwint: false, paymentPaypal: false, paymentCreditCard: false, eventPosterEnabled: false, eventPosterMediaUrl: "" });
