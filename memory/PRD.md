@@ -116,9 +116,11 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 - [x] Template Email V5 Anti-Promotions
 - [x] Fonctionnalité "Modifier une Campagne"
 - [x] Tests automatisés iteration 34
-- [x] **Scheduler de campagnes** (24 Jan 2026) - RÉPARÉ ✅
+- [x] **Scheduler de campagnes DAEMON** (24 Jan 2026) - RÉPARÉ ✅
+- [x] **Configuration Twilio Production** (24 Jan 2026) - VERROUILLÉE ✅
 
 ### P1 - À faire
+- [ ] **Activation numéro WhatsApp Suisse (+41)** : En attente approbation Meta
 - [ ] **Refactoring CoachDashboard.js** : Extraire composants (>6000 lignes)
 - [ ] **Export CSV contacts CRM** : Valider le flux de bout en bout
 
@@ -129,44 +131,52 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 
 ---
 
-## Scheduler de Campagnes (24 Jan 2026)
+## Scheduler de Campagnes - MODE DAEMON (24 Jan 2026)
 
-### Fichiers créés
-- `/app/backend/scheduler.py` - Script autonome pour l'envoi programmé
+### Fichiers
+- `/app/backend/scheduler.py` - Script autonome en mode DAEMON
 - `/app/backend/start_scheduler.sh` - Script de démarrage
+- `/var/log/scheduler.log` - Logs du scheduler
 
 ### Fonctionnalités
-- ✅ **Détection des campagnes programmées** : Status `scheduled` ou `sending`
-- ✅ **Comparaison UTC** : Utilise `datetime.now(timezone.utc)` pour éviter les problèmes de fuseau horaire
-- ✅ **Support multi-dates** : Gère `scheduledAt` (date unique) et `scheduledDates` (tableau)
-- ✅ **Gestion des retries** : 3 tentatives max avant statut `failed`
-- ✅ **Canaux séparés** : Le scheduler gère uniquement les emails (WhatsApp = manuel)
-- ✅ **Mise à jour du statut** : `scheduled` → `completed` ou `failed`
+- ✅ **MODE DAEMON** : Boucle `while True` avec `time.sleep(30)`
+- ✅ **Comparaison UTC** : `datetime.now(timezone.utc)` pour toutes les dates
+- ✅ **Support multi-dates** : `scheduledDates[]` et `sentDates[]`
+- ✅ **Isolation des canaux** : Email et WhatsApp dans des `try/except` séparés
+- ✅ **Gestion des retries** : 3 tentatives max avant `failed`
+- ✅ **Statut automatique** : `completed` seulement si TOUTES les dates sont dans `sentDates`
 
-### Usage
+### Configuration Twilio (VERROUILLÉE)
+```
+TWILIO_ACCOUNT_SID=ACff5e3137bc55a71df65e7887b3175f0d (34 chars)
+TWILIO_AUTH_TOKEN=3f89310aa2db1d7370dfa5d55ab51afd
+TWILIO_FROM_NUMBER=+17813324010 (PRODUCTION)
+```
+
+### Lancement du Scheduler
 ```bash
+# Mode DAEMON (défaut) - Tourne en arrière-plan
+cd /app/backend && python3 scheduler.py &
+
 # Exécution unique
-python scheduler.py
+python3 scheduler.py --once
 
 # Mode test sans envoi
-python scheduler.py --dry-run
+python3 scheduler.py --dry-run --once
 
-# Boucle infinie (toutes les 60s)
-python scheduler.py --loop
-
-# Via script bash
-./start_scheduler.sh           # Mode boucle
-./start_scheduler.sh --once    # Exécution unique
-./start_scheduler.sh --dry-run # Mode test
+# Vérifier les logs
+tail -f /var/log/scheduler.log
 ```
 
 ### Comportement par canal
-- **Email activé** : Le scheduler envoie via `/api/campaigns/send-email`
-- **Email désactivé (WhatsApp-only)** : Le scheduler marque comme `completed` à la date prévue
+- **Email** : Envoi via `/api/campaigns/send-email` (Resend)
+- **WhatsApp** : Envoi via Twilio API (numéro +17813324010)
+- **Échec d'un canal** : N'affecte PAS l'autre canal
 
 ### Notes importantes
-- Le quota Resend peut bloquer les envois (erreur: "You have reached your daily email sending quota")
-- Le scheduler doit être lancé manuellement ou via cron externe (supervisord en lecture seule)
+- Le scheduler tourne actuellement en mode daemon (PID visible via `ps aux | grep scheduler`)
+- Le quota Resend peut bloquer les emails (reset quotidien)
+- Le numéro WhatsApp +17813324010 nécessite une configuration dans Twilio Console comme "WhatsApp Sender"
 
 ---
 
