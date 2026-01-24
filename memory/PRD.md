@@ -40,9 +40,32 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 
 ---
 
-## What's Been Implemented (23 Jan 2026)
+## What's Been Implemented (24 Jan 2026)
 
-### Fonctionnalité "Modifier une Campagne"
+### 🔥 Bug Fix: Chat IA - Vision Totale du Site
+**Problème:** L'IA du ChatWidget était "aveugle" aux données dynamiques (produits, articles). Elle ne reconnaissait pas les produits existants comme "café congolais" lors des conversations.
+
+**Cause Racine:** Le frontend utilise `/api/chat/ai-response` (pas `/api/chat`) quand l'utilisateur a une session active. Cette route avait un contexte DIFFÉRENT et incomplet:
+- Requête MongoDB erronée: `{active: True}` au lieu de `{visible: {$ne: False}}`
+- Pas de distinction produits (`isProduct: True`) vs services
+- Contexte tronqué sans produits, cours, ni articles
+
+**Correction:** 
+- Route `/api/chat/ai-response` dans `/app/backend/server.py` (lignes 3192+)
+- Contexte dynamique complet synchronisé avec `/api/chat`:
+  - Produits (isProduct: True)
+  - Services/Offres
+  - Cours disponibles
+  - Articles et actualités
+  - Codes promo actifs
+- Logs de diagnostic ajoutés pour traçabilité
+
+**Validation:** Test E2E réussi - L'IA répond maintenant:
+> "Salut TestUser ! 😊 Oui, nous avons du café congolais en vente. Il est disponible pour 10.0 CHF."
+
+---
+
+### Fonctionnalité "Modifier une Campagne" (23 Jan 2026)
 1. ✅ **Bouton ✏️ (Modifier)** : Visible dans le tableau pour campagnes draft/scheduled
 2. ✅ **Pré-remplissage du formulaire** : Nom, message, mediaUrl, contacts, canaux
 3. ✅ **Titre dynamique** : "Nouvelle Campagne" → "✏️ Modifier la Campagne"
