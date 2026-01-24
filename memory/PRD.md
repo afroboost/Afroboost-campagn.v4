@@ -207,7 +207,10 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - Backend: Champ `notified` sur messages, endpoints `GET /api/notifications/unread` et `PUT /api/notifications/mark-read`
   - Frontend: Polling toutes les 10s, son de notification (Web Audio API), notifications browser
   - Badge de compteur sur l'onglet "💬 Conversations (n)"
-  - Garde-fous: Vision IA (café) et Twint non impactés
+  - **BOUTON DE TEST** visible dans l'onglet Conversations pour tester les notifications
+  - **FALLBACK TOAST** si notifications browser bloquées
+  - Logs de debug (console.log NOTIF_DEBUG:) pour traçabilité
+  - Garde-fous: Vision IA (café) et Twint non impactés ✅
 - [x] **Fix Permissions Notifications** (24 Jan 2026) - NOUVEAU ✅
   - Banner de demande de permission au premier accès à l'onglet Conversations
   - Fallback Toast interne si notifications browser bloquées
