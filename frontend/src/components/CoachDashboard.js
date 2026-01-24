@@ -1572,6 +1572,22 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   };
 
+  // === SUPPRESSION LIEN DE CHAT ===
+  const deleteChatLink = async (linkId) => {
+    if (!window.confirm("⚠️ Supprimer ce lien de partage ?\n\nLe lien ne sera plus accessible. Cette action est irréversible.")) return;
+    
+    try {
+      await axios.delete(`${API}/chat/links/${linkId}`);
+      setChatLinks(prev => prev.filter(l => l.id !== linkId && l.link_token !== linkId));
+      // Aussi supprimer des sessions enrichies
+      setEnrichedConversations(prev => prev.filter(c => c.id !== linkId));
+      setChatSessions(prev => prev.filter(s => s.id !== linkId));
+    } catch (err) {
+      console.error("Error deleting chat link:", err);
+      alert("Erreur lors de la suppression du lien");
+    }
+  };
+
   // === AJOUTER CONTACT MANUEL AU CRM (synchronisé avec codes promo) ===
   const addManualChatParticipant = async (name, email, whatsapp, source = 'manual_promo') => {
     try {
