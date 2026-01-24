@@ -2863,19 +2863,25 @@ async def update_chat_participant(participant_id: str, update_data: dict):
 @api_router.delete("/chat/participants/{participant_id}")
 async def delete_chat_participant(participant_id: str):
     """Supprime un participant du CRM"""
+    logger.info(f"[DELETE] Suppression participant: {participant_id}")
+    
     participant = await db.chat_participants.find_one({"id": participant_id}, {"_id": 0})
     if not participant:
+        logger.warning(f"[DELETE] Participant non trouvé: {participant_id}")
         raise HTTPException(status_code=404, detail="Participant non trouvé")
     
     # Supprimer le participant
-    await db.chat_participants.delete_one({"id": participant_id})
+    result = await db.chat_participants.delete_one({"id": participant_id})
+    logger.info(f"[DELETE] Participant supprimé: deleted_count={result.deleted_count}")
     
     # Optionnel: Retirer le participant de toutes les sessions
-    await db.chat_sessions.update_many(
+    sessions_update = await db.chat_sessions.update_many(
         {"participant_ids": participant_id},
         {"$pull": {"participant_ids": participant_id}}
     )
+    logger.info(f"[DELETE] Sessions mises à jour: modified_count={sessions_update.modified_count}")
     
+    logger.info(f"[DELETE] Participant {participant.get('name', 'inconnu')} supprimé avec succès ✅")
     return {"success": True, "message": f"Participant {participant.get('name', 'inconnu')} supprimé"}
 
 # --- Chat Sessions ---
