@@ -3192,8 +3192,8 @@ async def smart_chat_entry(request: Request):
 @api_router.post("/chat/ai-response")
 async def get_ai_response_with_session(request: Request):
     """
-    Envoie un message à l'IA avec le contexte de la session.
-    Vérifie que l'IA est active pour cette session avant de répondre.
+    Envoie un message à l'IA avec le contexte COMPLET de la session.
+    Inclut les produits, offres, cours et articles depuis MongoDB.
     
     Body attendu:
     {
@@ -3223,11 +3223,13 @@ async def get_ai_response_with_session(request: Request):
     if not participant:
         raise HTTPException(status_code=404, detail="Participant non trouvé")
     
+    participant_name = participant.get("name", "Utilisateur")
+    
     # Sauvegarder le message de l'utilisateur
     user_message = EnhancedChatMessage(
         session_id=session_id,
         sender_id=participant_id,
-        sender_name=participant.get("name", "Utilisateur"),
+        sender_name=participant_name,
         sender_type="user",
         content=message_text,
         mode=session.get("mode", "ai")
@@ -3239,7 +3241,7 @@ async def get_ai_response_with_session(request: Request):
         # Mode humain - Notifier le coach par e-mail (non-bloquant)
         asyncio.create_task(
             notify_coach_new_message(
-                participant_name=participant.get("name", "Un client"),
+                participant_name=participant_name,
                 message_preview=message_text,
                 session_id=session_id
             )
@@ -3263,66 +3265,189 @@ async def get_ai_response_with_session(request: Request):
             "user_message_id": user_message.id
         }
     
-    # Construire le contexte enrichi pour les ventes
-    default_name = "l'utilisateur"
-    participant_name = participant.get('name', default_name)
+    # =====================================================================
+    # CONTEXTE DYNAMIQUE COMPLET (IDENTIQUE À /api/chat)
+    # Récupère TOUS les produits, offres, cours et articles depuis MongoDB
+    # =====================================================================
+    logger.info(f"[CHAT-AI-RESPONSE] 🔄 Construction du contexte pour {participant_name}...")
     
-    # Récupérer les offres et cours pour les proposer
-    offers = await db.offers.find({"active": True}, {"_id": 0}).to_list(10)
-    courses = await db.courses.find({"archived": {"$ne": True}}, {"_id": 0}).to_list(10)
+    context = "\n\n========== CONNAISSANCES DU SITE AFROBOOST ==========\n"
+    context += "Utilise EXCLUSIVEMENT ces informations pour répondre sur les produits, cours, offres et articles.\n"
+    context += "IMPORTANT: Vérifie TOUJOURS l'INVENTAIRE BOUTIQUE avant de dire qu'un produit n'existe pas !\n"
     
-    # Construire le contexte de vente
-    sales_context = "\n\n=== CATALOGUE DISPONIBLE ===\n"
-    if offers:
-        sales_context += "\n📦 OFFRES SPÉCIALES:\n"
-        for offer in offers[:5]:
-            sales_context += f"- {offer.get('name', 'Offre')}: {offer.get('price', 'N/A')} CHF - {offer.get('description', '')[:50]}...\n"
+    # Prénom du client
+    context += f"\n👤 CLIENT: {participant_name} - Utilise son prénom pour être chaleureux.\n"
     
-    if courses:
-        sales_context += "\n🎯 COURS DISPONIBLES:\n"
-        for course in courses[:5]:
-            sales_context += f"- {course.get('title', 'Cours')}: {course.get('price', 'N/A')} CHF - {course.get('schedule', '')}\n"
+    # Concept/Description du site
+    try:
+        concept = await db.concept.find_one({"id": "concept"}, {"_id": 0})
+        if concept and concept.get('description'):
+            context += f"\n📌 À PROPOS D'AFROBOOST:\n{concept.get('description', '')[:500]}\n"
+    except Exception as e:
+        logger.warning(f"[CHAT-AI-RESPONSE] Erreur récupération concept: {e}")
     
-    # Prompt enrichi pour les ventes
-    sales_prompt = """
-Tu es un assistant commercial expert et chaleureux pour Afroboost, une salle de fitness unique.
-Tes objectifs:
-1. Répondre aux questions avec enthousiasme
-2. Proposer des cours et offres adaptés au client
-3. Guider vers la réservation ou l'achat
-4. Si le client montre de l'intérêt, propose un lien de paiement Stripe
+    # === SECTION 1: INVENTAIRE BOUTIQUE (PRODUITS PHYSIQUES) ===
+    try:
+        # Récupérer TOUS les éléments de la collection offers
+        all_offers = await db.offers.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(50)
+        
+        # LOG DE DIAGNOSTIC EXPLICITE
+        logger.info(f"[CHAT-AI-RESPONSE] ====== DIAGNOSTIC CONTEXTE ======")
+        logger.info(f"[CHAT-AI-RESPONSE] Nombre d'offres récupérées: {len(all_offers)}")
+        for o in all_offers:
+            logger.info(f"[CHAT-AI-RESPONSE] - {o.get('name')}: {o.get('price')} CHF (isProduct: {o.get('isProduct', False)})")
+        
+        # Séparer les PRODUITS des SERVICES
+        products = [o for o in all_offers if o.get('isProduct') == True]
+        services = [o for o in all_offers if not o.get('isProduct')]
+        
+        logger.info(f"[CHAT-AI-RESPONSE] ✅ Produits boutique: {len(products)}")
+        logger.info(f"[CHAT-AI-RESPONSE] ✅ Services/Offres: {len(services)}")
+        
+        # === PRODUITS BOUTIQUE (café, vêtements, accessoires...) ===
+        if products:
+            context += "\n\n🛒 INVENTAIRE BOUTIQUE (Produits en vente):\n"
+            for p in products[:15]:  # Max 15 produits
+                name = p.get('name', 'Produit')
+                price = p.get('price', 0)
+                desc = p.get('description', '')[:150] if p.get('description') else ''
+                category = p.get('category', '')
+                stock = p.get('stock', -1)
+                
+                context += f"  ★ {name.upper()} : {price} CHF"
+                if category:
+                    context += f" (Catégorie: {category})"
+                if stock > 0:
+                    context += f" - En stock: {stock}"
+                context += "\n"
+                if desc:
+                    context += f"    Description: {desc}\n"
+            context += "  → Si un client demande un de ces produits, CONFIRME qu'il est disponible !\n"
+            logger.info(f"[CHAT-AI-RESPONSE] ✅ Section INVENTAIRE BOUTIQUE ajoutée avec {len(products)} produits")
+        else:
+            context += "\n\n🛒 INVENTAIRE BOUTIQUE: Aucun produit en vente actuellement.\n"
+            logger.warning(f"[CHAT-AI-RESPONSE] ⚠️ Aucun produit trouvé!")
+        
+        # === SERVICES ET OFFRES (abonnements, cours à l'unité...) ===
+        if services:
+            context += "\n\n💰 OFFRES ET TARIFS (Services):\n"
+            for s in services[:10]:
+                name = s.get('name', 'Offre')
+                price = s.get('price', 0)
+                desc = s.get('description', '')[:100] if s.get('description') else ''
+                
+                context += f"  • {name} : {price} CHF"
+                if desc:
+                    context += f" - {desc}"
+                context += "\n"
+        else:
+            context += "\n\n💰 OFFRES: Aucune offre spéciale actuellement.\n"
+            
+    except Exception as e:
+        logger.error(f"[CHAT-AI-RESPONSE] ❌ Erreur récupération offres/produits: {e}")
+        context += "\n\n🛒 BOUTIQUE: Informations temporairement indisponibles.\n"
+    
+    # === SECTION 2: COURS DISPONIBLES ===
+    try:
+        courses = await db.courses.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(20)
+        if courses:
+            context += "\n\n🎯 COURS DISPONIBLES:\n"
+            for c in courses[:10]:  # Max 10 cours
+                name = c.get('name', 'Cours')
+                date = c.get('date', '')
+                time_slot = c.get('time', '')
+                location = c.get('locationName', c.get('location', ''))
+                price = c.get('price', '')
+                description = c.get('description', '')[:80] if c.get('description') else ''
+                
+                context += f"  • {name}"
+                if date:
+                    context += f" - {date}"
+                if time_slot:
+                    context += f" à {time_slot}"
+                if location:
+                    context += f" ({location})"
+                if price:
+                    context += f" - {price} CHF"
+                context += "\n"
+                if description:
+                    context += f"    → {description}\n"
+        else:
+            context += "\n\n🎯 COURS: Aucun cours programmé actuellement. Invite le client à suivre nos réseaux pour les prochaines dates.\n"
+    except Exception as e:
+        logger.warning(f"[CHAT-AI-RESPONSE] Erreur récupération cours: {e}")
+        context += "\n\n🎯 COURS: Informations temporairement indisponibles.\n"
+    
+    # === SECTION 3: ARTICLES ET ACTUALITÉS ===
+    try:
+        # Récupérer les 10 articles les plus récents
+        articles = await db.articles.find(
+            {"visible": {"$ne": False}}, 
+            {"_id": 0}
+        ).sort("createdAt", -1).to_list(10)
+        
+        if articles:
+            context += "\n\n📰 DERNIERS ARTICLES ET ACTUALITÉS:\n"
+            for a in articles[:5]:  # Max 5 articles dans le contexte
+                title = a.get('title', 'Article')
+                summary = a.get('summary', '')[:120] if a.get('summary') else ''
+                link = a.get('link', '')
+                
+                context += f"  • {title}\n"
+                if summary:
+                    context += f"    → {summary}\n"
+                if link:
+                    context += f"    🔗 Lien: {link}\n"
+        else:
+            context += "\n\n📰 ARTICLES: Pas d'articles récents. Le blog arrive bientôt !\n"
+    except Exception as e:
+        logger.warning(f"[CHAT-AI-RESPONSE] Erreur récupération articles: {e}")
+        # Silencieux si pas de collection articles
+    
+    # === SECTION 4: PROMOS SPÉCIALES (codes promo) ===
+    try:
+        promos = await db.discount_codes.find({"active": True}, {"_id": 0}).to_list(5)
+        if promos:
+            context += "\n\n🎁 CODES PROMO ACTIFS:\n"
+            for p in promos[:3]:
+                code = p.get('code', '')
+                discount = p.get('discountPercent', p.get('value', 0))
+                context += f"  • Code '{code}' : -{discount}% de réduction\n"
+    except:
+        pass  # Pas de promos = silencieux
+    
+    # === HISTORIQUE DE CONVERSATION ===
+    try:
+        recent_messages = await db.chat_messages.find(
+            {"session_id": session_id, "is_deleted": {"$ne": True}},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(10).to_list(10)
+        
+        if recent_messages and len(recent_messages) > 1:
+            history = "\n".join([
+                f"{'Client' if m.get('sender_type') == 'user' else 'Assistant'}: {m.get('content', '')}"
+                for m in reversed(recent_messages[1:])  # Exclure le message actuel
+            ])
+            context += f"\n\n📜 HISTORIQUE RÉCENT:\n{history}"
+    except Exception as e:
+        logger.warning(f"[CHAT-AI-RESPONSE] Erreur récupération historique: {e}")
+    
+    # === RÈGLES STRICTES POUR L'IA ===
+    context += """
 
-Quand le client veut réserver ou acheter:
-- Propose-lui directement de "cliquer sur le bouton Réserver" sur la page
-- Ou dis-lui qu'il peut payer directement sur le site
-
-Sois concis (max 3 phrases), chaleureux et utilise des emojis avec parcimonie.
-"""
+========== RÈGLES STRICTES ==========
+1. Tu es l'assistant d'Afroboost, expert en fitness et danse afro.
+2. Utilise UNIQUEMENT les informations ci-dessus pour parler des offres, cours et articles.
+3. N'INVENTE JAMAIS de cours, prix, ou articles qui ne sont pas listés.
+4. Si le client demande quelque chose qui n'est pas dans le contexte, dis : "Je n'ai pas cette information. Contacte directement le coach via WhatsApp ou email."
+5. Mets en avant les NOUVEAUTÉS et les articles récents si pertinent.
+6. Sois chaleureux, utilise des emojis 🎉 et le prénom du client.
+========================================"""
     
-    context = f"\n\nLe client qui te parle s'appelle {participant_name}. Utilise son prénom dans ta réponse."
-    context += sales_context
+    # Combiner le prompt système avec le contexte
+    full_system_prompt = ai_config.get("systemPrompt", "Tu es l'assistant IA d'Afroboost, une application de réservation de cours de fitness.") + context
     
-    # Récupérer les derniers messages pour le contexte
-    recent_messages = await db.chat_messages.find(
-        {"session_id": session_id, "is_deleted": {"$ne": True}},
-        {"_id": 0}
-    ).sort("created_at", -1).limit(10).to_list(10)
-    
-    if recent_messages:
-        history = "\n".join([
-            f"{'Client' if m.get('sender_type') == 'user' else 'Assistant'}: {m.get('content', '')}"
-            for m in reversed(recent_messages[1:])  # Exclure le message actuel
-        ])
-        context += f"\n\nHistorique récent:\n{history}"
-    
-    # Récupérer le concept pour contexte
-    concept = await db.concept.find_one({"id": "concept"}, {"_id": 0})
-    if concept:
-        context += f"\n\nContexte de la marque: {concept.get('description', '')}"
-    
-    # Combiner le prompt de vente avec le prompt personnalisé
-    base_prompt = ai_config.get("systemPrompt", "Tu es l'assistant IA d'Afroboost.")
-    full_system_prompt = sales_prompt + "\n\n" + base_prompt + context
+    logger.info(f"[CHAT-AI-RESPONSE] ✅ Contexte construit, envoi à l'IA...")
     
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
@@ -3341,6 +3466,8 @@ Sois concis (max 3 phrases), chaleureux et utilise des emojis avec parcimonie.
         ai_response_text = await chat.send_message(user_msg)
         response_time = round(time.time() - start_time, 2)
         
+        logger.info(f"[CHAT-AI-RESPONSE] ✅ Réponse IA générée en {response_time}s")
+        
         # Sauvegarder la réponse de l'IA
         ai_message = EnhancedChatMessage(
             session_id=session_id,
@@ -3356,7 +3483,7 @@ Sois concis (max 3 phrases), chaleureux et utilise des emojis avec parcimonie.
         await db.ai_logs.insert_one({
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "session_id": session_id,
-            "from": participant.get("name", "anonymous"),
+            "from": participant_name,
             "message": message_text,
             "response": ai_response_text,
             "responseTime": response_time
