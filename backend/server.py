@@ -2502,17 +2502,69 @@ async def delete_lead(lead_id: str):
 # --- Chat IA Widget ---
 @api_router.post("/chat")
 async def chat_with_ai(data: ChatMessage):
-    """Chat avec l'IA depuis le widget client"""
+    """
+    Chat avec l'IA depuis le widget client.
+    
+    Fonctionnalités:
+    1. SYNCHRONISATION IA: Récupère dynamiquement les offres et articles
+    2. CRM AUTO-SAVE: Enregistre automatiquement le prospect (anti-doublon)
+    3. CONTEXTE DYNAMIQUE: Injecte les infos dans le prompt système
+    """
     import time
     start_time = time.time()
     
     message = data.message
     first_name = data.firstName
+    email = data.email
+    whatsapp = data.whatsapp
+    source = data.source or "chat_ia"
     
     if not message:
         raise HTTPException(status_code=400, detail="Message requis")
     
-    # Récupérer la config IA
+    # === 1. CRM AUTO-SAVE (Anti-doublon) ===
+    # Enregistrer le prospect dans chat_participants si email ou whatsapp fourni
+    if email or whatsapp:
+        try:
+            # Vérifier si le contact existe déjà (par email OU whatsapp)
+            existing_contact = None
+            if email:
+                existing_contact = await db.chat_participants.find_one({"email": email}, {"_id": 0})
+            if not existing_contact and whatsapp:
+                # Normaliser le numéro WhatsApp
+                clean_whatsapp = whatsapp.replace(" ", "").replace("-", "")
+                existing_contact = await db.chat_participants.find_one({
+                    "$or": [
+                        {"whatsapp": whatsapp},
+                        {"whatsapp": clean_whatsapp}
+                    ]
+                }, {"_id": 0})
+            
+            if not existing_contact:
+                # Créer le nouveau contact
+                new_participant = {
+                    "id": str(uuid.uuid4()),
+                    "name": first_name or "Visiteur Chat IA",
+                    "email": email or "",
+                    "whatsapp": whatsapp or "",
+                    "source": f"Lien Chat IA ({source})",
+                    "link_token": None,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "last_seen_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.chat_participants.insert_one(new_participant)
+                logger.info(f"[CRM-AUTO] Nouveau contact créé: {first_name or 'Visiteur'} ({email or whatsapp}) - Source: {source}")
+            else:
+                # Mettre à jour last_seen_at
+                await db.chat_participants.update_one(
+                    {"id": existing_contact.get("id")},
+                    {"$set": {"last_seen_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                logger.info(f"[CRM-AUTO] Contact existant mis à jour: {existing_contact.get('name')}")
+        except Exception as crm_error:
+            logger.warning(f"[CRM-AUTO] Erreur enregistrement CRM (non bloquant): {crm_error}")
+    
+    # === 2. RÉCUPÉRER LA CONFIG IA ===
     ai_config = await db.ai_config.find_one({"id": "ai_config"}, {"_id": 0})
     if not ai_config:
         ai_config = AIConfig().model_dump()
@@ -2520,38 +2572,103 @@ async def chat_with_ai(data: ChatMessage):
     if not ai_config.get("enabled"):
         return {"response": "L'assistant IA est actuellement désactivé. Veuillez contacter le coach directement.", "responseTime": 0}
     
-    # Construire le contexte avec le prénom
+    # === 3. CONSTRUIRE LE CONTEXTE DYNAMIQUE ===
     context = ""
+    
+    # Prénom du client
     if first_name:
         context += f"\n\nLe client qui te parle s'appelle {first_name}. Utilise son prénom dans ta réponse pour être chaleureux."
     
-    # Récupérer les infos du concept pour contexte
-    concept = await db.concept.find_one({"id": "concept"}, {"_id": 0})
-    if concept:
-        context += f"\n\nContexte Afroboost: {concept.get('description', '')}"
+    # Concept/Description du site
+    try:
+        concept = await db.concept.find_one({"id": "concept"}, {"_id": 0})
+        if concept:
+            context += f"\n\nContexte Afroboost: {concept.get('description', '')}"
+    except Exception as e:
+        logger.warning(f"[CHAT-IA] Erreur récupération concept: {e}")
     
-    # Récupérer les cours disponibles
-    courses = await db.courses.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(10)
-    if courses:
-        courses_info = "\n".join([f"- {c.get('name', '')} le {c.get('date', '')} à {c.get('time', '')}" for c in courses[:5]])
-        context += f"\n\nCours disponibles:\n{courses_info}"
+    # === SYNCHRONISATION OFFRES (DYNAMIQUE) ===
+    try:
+        offers = await db.offers.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(50)
+        if offers:
+            offers_info = []
+            for o in offers:
+                offer_line = f"- {o.get('name', '')} - {o.get('price', 0)} CHF"
+                if o.get('description'):
+                    # Limiter la description à 100 caractères
+                    desc = o.get('description', '')[:100]
+                    offer_line += f" ({desc}{'...' if len(o.get('description', '')) > 100 else ''})"
+                offers_info.append(offer_line)
+            
+            context += f"\n\n=== OFFRES ACTUELLES (utilise ces infos si le client pose des questions sur les tarifs, prix ou services) ===\n"
+            context += "\n".join(offers_info[:10])  # Max 10 offres
+            context += "\n=== FIN DES OFFRES ==="
+        else:
+            context += "\n\n(Aucune offre actuellement disponible. Si le client demande les tarifs, invite-le à contacter directement le coach.)"
+    except Exception as e:
+        logger.warning(f"[CHAT-IA] Erreur récupération offres (non bloquant): {e}")
+        context += "\n\n(Les offres ne sont pas disponibles pour le moment. Réponds normalement aux autres questions.)"
+    
+    # === SYNCHRONISATION COURS (DYNAMIQUE) ===
+    try:
+        courses = await db.courses.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(20)
+        if courses:
+            courses_info = []
+            for c in courses:
+                course_line = f"- {c.get('name', '')} le {c.get('date', '')} à {c.get('time', '')}"
+                if c.get('location'):
+                    course_line += f" ({c.get('location', '')})"
+                if c.get('price'):
+                    course_line += f" - {c.get('price', '')} CHF"
+                courses_info.append(course_line)
+            
+            context += f"\n\n=== COURS DISPONIBLES ===\n"
+            context += "\n".join(courses_info[:10])  # Max 10 cours
+            context += "\n=== FIN DES COURS ==="
+    except Exception as e:
+        logger.warning(f"[CHAT-IA] Erreur récupération cours (non bloquant): {e}")
+    
+    # === SYNCHRONISATION ARTICLES/BLOG (DYNAMIQUE) ===
+    try:
+        # Vérifier si une collection 'articles' ou 'blog' existe
+        articles = await db.articles.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(10)
+        if articles:
+            articles_info = []
+            for a in articles:
+                article_line = f"- {a.get('title', '')} - {a.get('summary', '')[:80]}"
+                articles_info.append(article_line)
+            
+            context += f"\n\n=== ARTICLES DU BLOG ===\n"
+            context += "\n".join(articles_info[:5])  # Max 5 articles
+            context += "\n=== FIN DES ARTICLES ==="
+    except Exception as e:
+        # Pas de collection articles = pas grave
+        pass
+    
+    # === INSTRUCTION IMPORTANTE POUR L'IA ===
+    context += """
+
+=== RÈGLES IMPORTANTES ===
+1. N'invente JAMAIS d'offres, cours ou articles qui ne sont pas listés ci-dessus.
+2. Si le client demande quelque chose qui n'est pas dans la liste, réponds : "Je n'ai pas cette information actuellement. Je vous invite à contacter directement le coach pour plus de détails."
+3. Sois toujours chaleureux et professionnel.
+=== FIN DES RÈGLES ==="""
     
     full_system_prompt = ai_config.get("systemPrompt", "Tu es l'assistant IA d'Afroboost, une application de réservation de cours de fitness.") + context
     
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
-        import uuid
         
         emergent_key = os.environ.get("EMERGENT_LLM_KEY")
         if not emergent_key:
             return {"response": "Configuration IA incomplète. Contactez l'administrateur.", "responseTime": 0}
         
         # Generate a unique session ID for this chat
-        session_id = f"afroboost_chat_{uuid.uuid4().hex[:8]}"
+        chat_session_id = f"afroboost_chat_{uuid.uuid4().hex[:8]}"
         
         chat = LlmChat(
             api_key=emergent_key,
-            session_id=session_id,
+            session_id=chat_session_id,
             system_message=full_system_prompt
         )
         
@@ -2563,6 +2680,9 @@ async def chat_with_ai(data: ChatMessage):
         await db.ai_logs.insert_one({
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "from": f"widget_{first_name or 'anonymous'}",
+            "email": email or "",
+            "whatsapp": whatsapp or "",
+            "source": source,
             "message": message,
             "response": ai_response,
             "responseTime": response_time
