@@ -2594,14 +2594,18 @@ async def chat_with_ai(data: ChatMessage):
         # Récupérer TOUS les éléments de la collection offers
         all_offers = await db.offers.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(50)
         
-        # LOG DE DIAGNOSTIC
-        logger.info(f"[CHAT-IA] 📦 Récupération offres: {len(all_offers)} trouvées")
+        # LOG DE DIAGNOSTIC (PRINT EXPLICITE)
+        print(f"[DEBUG IA CONTEXT] ====== DÉBUT DIAGNOSTIC ======")
+        print(f"[DEBUG IA CONTEXT] Nombre d'offres récupérées: {len(all_offers)}")
         for o in all_offers:
-            logger.info(f"[CHAT-IA]   - {o.get('name')}: {o.get('price')} CHF (isProduct: {o.get('isProduct', False)})")
+            print(f"[DEBUG IA CONTEXT] - {o.get('name')}: {o.get('price')} CHF (isProduct: {o.get('isProduct', False)})")
         
         # Séparer les PRODUITS des SERVICES
         products = [o for o in all_offers if o.get('isProduct') == True]
         services = [o for o in all_offers if not o.get('isProduct')]
+        
+        print(f"[DEBUG IA CONTEXT] Produits boutique: {len(products)}")
+        print(f"[DEBUG IA CONTEXT] Services/Offres: {len(services)}")
         
         # === PRODUITS BOUTIQUE (café, vêtements, accessoires...) ===
         if products:
@@ -2622,8 +2626,10 @@ async def chat_with_ai(data: ChatMessage):
                 if desc:
                     context += f"    Description: {desc}\n"
             context += "  → Si un client demande un de ces produits, CONFIRME qu'il est disponible !\n"
+            print(f"[DEBUG IA CONTEXT] ✅ Section INVENTAIRE BOUTIQUE ajoutée avec {len(products)} produits")
         else:
             context += "\n\n🛒 INVENTAIRE BOUTIQUE: Aucun produit en vente actuellement.\n"
+            print(f"[DEBUG IA CONTEXT] ⚠️ Aucun produit trouvé!")
         
         # === SERVICES ET OFFRES (abonnements, cours à l'unité...) ===
         if services:
