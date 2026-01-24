@@ -203,6 +203,11 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - Badges de date (Aujourd'hui, Hier, date complète)
   - Timestamps précis sur chaque message
   - Séparateurs de date dans l'historique des conversations
+- [x] **Notifications Sonores et Visuelles** (24 Jan 2026) - NOUVEAU ✅
+  - Backend: Champ `notified` sur messages, endpoints `GET /api/notifications/unread` et `PUT /api/notifications/mark-read`
+  - Frontend: Polling toutes les 10s, son de notification (Web Audio API), notifications browser
+  - Badge de compteur sur l'onglet "💬 Conversations (n)"
+  - Garde-fous: Vision IA (café) et Twint non impactés
 
 ### P1 - À faire
 - [ ] **Gérer les articles dans le Dashboard** : Interface CRUD pour créer/modifier/supprimer des articles
