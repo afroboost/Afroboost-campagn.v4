@@ -4469,7 +4469,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                 </div>
               ))}
             </div>
-            </div>{/* Fin conteneur scrollable offres */}
+            </div>
             
             {/* Formulaire Ajout/Modification - RESPONSIVE */}
             <form id="offer-form" onSubmit={addOffer} className="glass rounded-lg p-4 mt-4 border-2 border-purple-500/50">
