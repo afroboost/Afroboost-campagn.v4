@@ -4345,59 +4345,84 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
         {/* Offers Tab */}
         {tab === "offers" && (
           <div className="card-gradient rounded-xl p-4 sm:p-6">
-            <h2 className="font-semibold text-white mb-6 text-lg sm:text-xl">{t('offers')}</h2>
-            
-            {/* === MOBILE VIEW: Cartes verticales === */}
-            <div className="block md:hidden space-y-4">
-              {offers.map((offer, idx) => (
-                <div key={offer.id} className="glass rounded-lg p-4">
-                  {/* Image et nom */}
-                  <div className="flex items-center gap-3 mb-3">
-                    {offer.images?.[0] || offer.thumbnail ? (
-                      <img src={offer.images?.[0] || offer.thumbnail} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg bg-purple-900/30 flex items-center justify-center text-2xl flex-shrink-0">🎧</div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-white font-semibold text-sm truncate">{offer.name}</h4>
-                      <p className="text-purple-400 text-xs">{offer.price} CHF</p>
-                      <p className="text-white/50 text-xs">{offer.images?.filter(i => i).length || 0} images</p>
-                    </div>
-                    {/* Toggle visible */}
-                    <div className="flex flex-col items-center gap-1">
-                      <div className={`switch ${offer.visible ? 'active' : ''}`} onClick={() => { const n = [...offers]; n[idx].visible = !offer.visible; setOffers(n); updateOffer({ ...offer, visible: !offer.visible }); }} />
-                      <span className="text-xs text-white/40">{offer.visible ? 'ON' : 'OFF'}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Description */}
-                  {offer.description && (
-                    <p className="text-white/60 text-xs mb-3 italic truncate">"{offer.description}"</p>
-                  )}
-                  
-                  {/* Boutons action - largeur 100% sur mobile */}
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => startEditOffer(offer)}
-                      className="flex-1 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium"
-                      data-testid={`edit-offer-${offer.id}`}
-                    >
-                      ✏️ Modifier
-                    </button>
-                    <button 
-                      onClick={() => deleteOffer(offer.id)}
-                      className="flex-1 py-3 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium"
-                      data-testid={`delete-offer-${offer.id}`}
-                    >
-                      🗑️ Supprimer
-                    </button>
-                  </div>
-                </div>
-              ))}
+            {/* En-tête fixe avec titre et recherche */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sticky top-0 z-10 pb-3" style={{ background: 'inherit' }}>
+              <h2 className="font-semibold text-white text-lg sm:text-xl">{t('offers')}</h2>
+              <div className="relative w-full sm:w-64">
+                <input
+                  type="text"
+                  placeholder="🔍 Rechercher une offre..."
+                  value={offersSearch || ''}
+                  onChange={(e) => setOffersSearch(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.3)', color: '#fff' }}
+                  data-testid="offers-search-input"
+                />
+                {offersSearch && (
+                  <button
+                    onClick={() => setOffersSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                  >✕</button>
+                )}
+              </div>
             </div>
             
-            {/* === DESKTOP VIEW: Layout horizontal === */}
-            <div className="hidden md:block">
+            {/* Conteneur scrollable pour les offres */}
+            <div style={{ maxHeight: '500px', overflowY: 'auto', overflowX: 'hidden' }}>
+              {/* === MOBILE VIEW: Cartes verticales === */}
+              <div className="block md:hidden space-y-4">
+                {(offersSearch ? offers.filter(o => 
+                  o.name?.toLowerCase().includes(offersSearch.toLowerCase()) ||
+                  o.description?.toLowerCase().includes(offersSearch.toLowerCase())
+                ) : offers).map((offer, idx) => (
+                  <div key={offer.id} className="glass rounded-lg p-4">
+                    {/* Image et nom */}
+                    <div className="flex items-center gap-3 mb-3">
+                      {offer.images?.[0] || offer.thumbnail ? (
+                        <img src={offer.images?.[0] || offer.thumbnail} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg bg-purple-900/30 flex items-center justify-center text-2xl flex-shrink-0">🎧</div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-semibold text-sm truncate">{offer.name}</h4>
+                        <p className="text-purple-400 text-xs">{offer.price} CHF</p>
+                        <p className="text-white/50 text-xs">{offer.images?.filter(i => i).length || 0} images</p>
+                      </div>
+                      {/* Toggle visible */}
+                      <div className="flex flex-col items-center gap-1">
+                        <div className={`switch ${offer.visible ? 'active' : ''}`} onClick={() => { const n = [...offers]; n[idx].visible = !offer.visible; setOffers(n); updateOffer({ ...offer, visible: !offer.visible }); }} />
+                        <span className="text-xs text-white/40">{offer.visible ? 'ON' : 'OFF'}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Description */}
+                    {offer.description && (
+                      <p className="text-white/60 text-xs mb-3 italic truncate">"{offer.description}"</p>
+                    )}
+                    
+                    {/* Boutons action - largeur 100% sur mobile */}
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => startEditOffer(offer)}
+                        className="flex-1 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium"
+                        data-testid={`edit-offer-${offer.id}`}
+                      >
+                        ✏️ Modifier
+                      </button>
+                      <button 
+                        onClick={() => deleteOffer(offer.id)}
+                        className="flex-1 py-3 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium"
+                        data-testid={`delete-offer-${offer.id}`}
+                      >
+                        🗑️ Supprimer
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* === DESKTOP VIEW: Layout horizontal === */}
+              <div className="hidden md:block">
               {offers.map((offer, idx) => (
                 <div key={offer.id} className="glass rounded-lg p-4 mb-4">
                   <div className="flex justify-between items-start mb-3">
