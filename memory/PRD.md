@@ -131,52 +131,38 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 
 ---
 
-## Scheduler de Campagnes - MODE DAEMON (24 Jan 2026)
+## Scheduler de Campagnes - INTÉGRÉ AU SERVEUR (24 Jan 2026)
+
+### Architecture
+Le scheduler est maintenant **intégré directement dans `server.py`** et démarre automatiquement avec le serveur FastAPI via un thread daemon. Plus besoin de lancement manuel !
 
 ### Fichiers
-- `/app/backend/scheduler.py` - Script autonome en mode DAEMON
-- `/app/backend/start_scheduler.sh` - Script de démarrage
-- `/var/log/scheduler.log` - Logs du scheduler
+- `/app/backend/server.py` - Contient le scheduler intégré (lignes 4485+)
+- `/var/log/supervisor/backend.err.log` - Logs détaillés du scheduler
 
 ### Fonctionnalités
+- ✅ **DÉMARRAGE AUTOMATIQUE** : Thread lancé au startup du serveur FastAPI
 - ✅ **MODE DAEMON** : Boucle `while True` avec `time.sleep(30)`
+- ✅ **HEARTBEAT** : Log `[SYSTEM] Scheduler is alive` toutes les 60s
 - ✅ **Comparaison UTC** : `datetime.now(timezone.utc)` pour toutes les dates
-- ✅ **Support multi-dates** : `scheduledDates[]` et `sentDates[]`
 - ✅ **Isolation des canaux** : Email et WhatsApp dans des `try/except` séparés
-- ✅ **Gestion des retries** : 3 tentatives max avant `failed`
-- ✅ **Statut automatique** : `completed` seulement si TOUTES les dates sont dans `sentDates`
+- ✅ **Gestion multi-dates** : `scheduledDates[]` → `sentDates[]` → `status: completed`
+- ✅ **Erreurs silencieuses** : L'échec d'un canal ne bloque pas les autres
 
-### Configuration Twilio (VERROUILLÉE)
-```
-TWILIO_ACCOUNT_SID=ACff5e3137bc55a71df65e7887b3175f0d (34 chars)
-TWILIO_AUTH_TOKEN=3f89310aa2db1d7370dfa5d55ab51afd
-TWILIO_FROM_NUMBER=+17813324010 (PRODUCTION)
-```
-
-### Lancement du Scheduler
+### Vérification du Scheduler
 ```bash
-# Mode DAEMON (défaut) - Tourne en arrière-plan
-cd /app/backend && python3 scheduler.py &
-
-# Exécution unique
-python3 scheduler.py --once
-
-# Mode test sans envoi
-python3 scheduler.py --dry-run --once
-
 # Vérifier les logs
-tail -f /var/log/scheduler.log
+tail -f /var/log/supervisor/backend.err.log | grep SCHEDULER
+
+# Chercher le heartbeat
+grep "Scheduler is alive" /var/log/supervisor/backend.out.log
 ```
 
-### Comportement par canal
-- **Email** : Envoi via `/api/campaigns/send-email` (Resend)
-- **WhatsApp** : Envoi via Twilio API (numéro +17813324010)
-- **Échec d'un canal** : N'affecte PAS l'autre canal
-
-### Notes importantes
-- Le scheduler tourne actuellement en mode daemon (PID visible via `ps aux | grep scheduler`)
-- Le quota Resend peut bloquer les emails (reset quotidien)
-- Le numéro WhatsApp +17813324010 nécessite une configuration dans Twilio Console comme "WhatsApp Sender"
+### Comportement
+1. **Au démarrage** : `[SYSTEM] ✅ Scheduler is ONLINE`
+2. **Toutes les 30s** : Scan des campagnes `status: scheduled`
+3. **Si date passée** : Traitement automatique (email/WhatsApp)
+4. **Après traitement** : Mise à jour `sentDates`, `status`, `lastProcessedAt`
 
 ---
 
