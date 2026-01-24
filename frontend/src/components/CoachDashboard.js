@@ -6584,20 +6584,183 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
               )}
             </div>
 
-            {/* Liste des conversations actives - AVEC FILTRAGE ET SUPPRESSION */}
+            {/* Liste des conversations actives - CRM AVANCÉ AVEC INFINITE SCROLL */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Panel gauche: Liste des sessions */}
+              {/* Panel gauche: Liste des sessions avec recherche et infinite scroll */}
               <div className="glass rounded-xl p-4" style={{ border: '1px solid rgba(217, 28, 210, 0.2)' }}>
-                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                  🗨️ Conversations ({filteredChatSessions.length}{conversationSearch ? `/${chatSessions.length}` : ''})
-                </h3>
-                {filteredChatSessions.length === 0 ? (
-                  <p className="text-white/50 text-sm text-center py-8">
-                    {conversationSearch ? 'Aucune conversation correspondante' : 'Aucune conversation pour le moment'}
-                  </p>
+                {/* Header avec compteur */}
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-white font-semibold flex items-center gap-2">
+                    🗨️ Conversations 
+                    <span className="text-xs font-normal text-white/60">
+                      ({enrichedConversations.length}{conversationsTotal > enrichedConversations.length ? `/${conversationsTotal}` : ''})
+                    </span>
+                  </h3>
+                  {conversationsLoading && (
+                    <span className="text-xs text-purple-400 animate-pulse">Chargement...</span>
+                  )}
+                </div>
+                
+                {/* Barre de recherche CRM */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={conversationSearch}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      placeholder="🔍 Rechercher par nom, email, message..."
+                      className="w-full px-4 py-2.5 pl-10 rounded-lg text-sm"
+                      style={{ 
+                        background: 'rgba(139, 92, 246, 0.1)', 
+                        border: '1px solid rgba(139, 92, 246, 0.3)', 
+                        color: '#fff' 
+                      }}
+                      data-testid="crm-search-input"
+                    />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50">
+                      🔍
+                    </span>
+                    {conversationSearch && (
+                      <button
+                        onClick={() => { setConversationSearch(''); loadConversations(true); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  {conversationSearch && (
+                    <p className="text-xs text-purple-400 mt-1">
+                      {enrichedConversations.length} résultat(s) pour "{conversationSearch}"
+                    </p>
+                  )}
+                </div>
+                
+                {/* Liste avec Infinite Scroll */}
+                {enrichedConversations.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-white/50 text-sm">
+                      {conversationSearch ? '🔍 Aucune conversation correspondante' : '💬 Aucune conversation pour le moment'}
+                    </p>
+                  </div>
                 ) : (
-                  <div className="space-y-2" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                    {filteredChatSessions.map(session => {
+                  <div 
+                    ref={conversationsListRef}
+                    onScroll={handleConversationsScroll}
+                    className="space-y-1"
+                    style={{ maxHeight: '450px', overflowY: 'auto', scrollBehavior: 'smooth' }}
+                    data-testid="conversations-list"
+                  >
+                    {Object.entries(groupedConversations).map(([dateLabel, conversations]) => (
+                      <div key={dateLabel}>
+                        {/* Badge de date */}
+                        <div 
+                          className="sticky top-0 z-10 py-1.5 px-3 mb-2 mt-2 first:mt-0"
+                          style={{ background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.2), transparent)' }}
+                        >
+                          <span className="text-xs font-medium text-purple-400">
+                            📅 {dateLabel}
+                          </span>
+                        </div>
+                        
+                        {/* Conversations de cette date */}
+                        {conversations.map(session => {
+                          const participantNames = session.participants?.map(p => p.name).join(', ') || 
+                            session.participant_ids?.map(id => getParticipantName(id)).join(', ') || 
+                            'Aucun participant';
+                          const isSelected = selectedSession?.id === session.id;
+                          const lastMsg = session.last_message;
+                          
+                          return (
+                            <div
+                              key={session.id}
+                              className={`p-3 rounded-lg transition-all cursor-pointer mb-2 ${isSelected ? 'ring-2 ring-purple-500' : 'hover:bg-white/5'}`}
+                              style={{ background: isSelected ? 'rgba(139, 92, 246, 0.2)' : 'rgba(0,0,0,0.3)' }}
+                              onClick={() => {
+                                setSelectedSession(session);
+                                loadSessionMessages(session.id);
+                              }}
+                              data-testid={`session-${session.id}`}
+                            >
+                              {/* Ligne 1: Nom + Badge Mode */}
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-white text-sm font-medium truncate flex-1">{participantNames}</span>
+                                <div className="flex items-center gap-1.5 ml-2">
+                                  {session.message_count > 0 && (
+                                    <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-white/60">
+                                      {session.message_count}
+                                    </span>
+                                  )}
+                                  <span className={`text-xs px-2 py-0.5 rounded ${
+                                    session.mode === 'community' ? 'bg-purple-600/30 text-purple-400' :
+                                    session.is_ai_active ? 'bg-green-600/30 text-green-400' : 'bg-yellow-600/30 text-yellow-400'
+                                  }`}>
+                                    {session.mode === 'community' ? '👥' : session.is_ai_active ? '🤖' : '👤'}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Ligne 2: Dernier message ou source */}
+                              <div className="text-white/50 text-xs truncate">
+                                {lastMsg?.content ? (
+                                  <span>
+                                    <span className="text-white/40">
+                                      {lastMsg.sender_type === 'user' ? '👤' : lastMsg.sender_type === 'coach' ? '🏋️' : '🤖'}
+                                    </span>
+                                    {' '}{lastMsg.content}
+                                  </span>
+                                ) : (
+                                  session.title || getSourceLabel(session.participants?.[0]?.source || chatParticipants.find(p => p.id === session.participant_ids?.[0])?.source)
+                                )}
+                              </div>
+                              
+                              {/* Ligne 3: Heure du dernier message + Actions */}
+                              <div className="flex items-center justify-between mt-2">
+                                <span className="text-white/30 text-xs">
+                                  {lastMsg?.created_at ? (
+                                    new Date(lastMsg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                                  ) : (
+                                    new Date(session.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                                  )}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteChatSession(session.id);
+                                  }}
+                                  className="px-2 py-0.5 rounded text-xs transition-all hover:bg-red-600/30 opacity-50 hover:opacity-100"
+                                  style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}
+                                  title="Supprimer"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                    
+                    {/* Indicateur de chargement en bas */}
+                    {conversationsHasMore && (
+                      <div className="py-4 text-center">
+                        <span className="text-xs text-purple-400 animate-pulse">
+                          ↓ Scrollez pour charger plus...
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Message fin de liste */}
+                    {!conversationsHasMore && enrichedConversations.length > 0 && (
+                      <div className="py-3 text-center">
+                        <span className="text-xs text-white/30">
+                          — Fin des conversations —
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
                       const participantNames = session.participant_ids?.map(id => getParticipantName(id)).join(', ') || 'Aucun participant';
                       const isSelected = selectedSession?.id === session.id;
                       
