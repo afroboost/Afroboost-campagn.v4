@@ -4590,20 +4590,18 @@ def scheduler_loop():
     scheduler_db = mongo_client[os.environ.get('DB_NAME', 'test_database')]
     
     logger.info("[SCHEDULER] ✅ Thread démarré - Mode DAEMON actif")
-    print("[SYSTEM] ✅ Scheduler is ONLINE - Checking campaigns every 30s")
+    print("[SYSTEM] ✅ Scheduler is ONLINE - Checking campaigns every 10s")
     
     SCHEDULER_RUNNING = True
-    heartbeat_counter = 0
     
     while SCHEDULER_RUNNING:
         try:
             now = datetime.now(timezone.utc)
+            now_str = now.strftime('%H:%M:%S')
             SCHEDULER_LAST_HEARTBEAT = now.isoformat()
-            heartbeat_counter += 1
             
-            # Heartbeat toutes les 60 secondes (2 cycles)
-            if heartbeat_counter % 2 == 0:
-                print(f"[SYSTEM] Scheduler is alive - Scanning DB... ({now.strftime('%H:%M:%S')} UTC)")
+            # HEARTBEAT TOUTES LES 10 SECONDES (visible dans les logs)
+            print(f"[DEBUG-DAEMON] Heartbeat - Scan de la DB en cours... ({now_str} UTC)")
             
             # Chercher les campagnes programmées
             campaigns = list(scheduler_db.campaigns.find(
@@ -4611,8 +4609,7 @@ def scheduler_loop():
                 {"_id": 0}
             ))
             
-            if campaigns:
-                logger.info(f"[SCHEDULER] 📋 {len(campaigns)} campagne(s) à vérifier")
+            logger.info(f"[SCHEDULER] 📋 {len(campaigns)} campagne(s) à vérifier")
             
             for campaign in campaigns:
                 try:
@@ -4629,19 +4626,32 @@ def scheduler_loop():
                         scheduled_dates = [scheduled_at]
                     
                     if not scheduled_dates:
+                        # LOG DE DIAGNOSTIC
+                        print(f"[TIME-CHECK] Campagne: {campaign_name} | Pas de date programmée | SKIP")
                         continue
                     
-                    # Trouver les dates à traiter
+                    # Trouver les dates à traiter avec LOG DE DIAGNOSTIC
                     dates_to_process = []
                     for date_str in scheduled_dates:
                         parsed_date = parse_campaign_date(date_str)
-                        if parsed_date and parsed_date <= now and date_str not in sent_dates:
-                            dates_to_process.append(date_str)
+                        if parsed_date:
+                            is_past = parsed_date <= now
+                            already_sent = date_str in sent_dates
+                            should_process = is_past and not already_sent
+                            
+                            # LOG DE DIAGNOSTIC TEMPOREL
+                            print(f"[TIME-CHECK] Campagne: {campaign_name} | Date prévue: {date_str[:19]} | Heure actuelle UTC: {now.isoformat()[:19]} | Match: {should_process}")
+                            
+                            if should_process:
+                                dates_to_process.append(date_str)
+                        else:
+                            print(f"[TIME-CHECK] Campagne: {campaign_name} | Date invalide: {date_str} | SKIP")
                     
                     if not dates_to_process:
                         continue
                     
                     logger.info(f"[SCHEDULER] 🎯 Traitement: {campaign_name} - {len(dates_to_process)} date(s)")
+                    print(f"[SCHEDULER] 🎯 EXÉCUTION: {campaign_name}")
                     
                     # Récupérer les contacts
                     target_type = campaign.get("targetType", "all")
