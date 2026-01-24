@@ -65,6 +65,25 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 
 ---
 
+### 💳 Nouvelle Fonctionnalité: Lien de Paiement Twint Dynamique
+**Objectif:** Permettre au coach de définir un lien Twint et faire en sorte que l'IA le propose automatiquement aux clients.
+
+**Implémentation:**
+1. **Backend (`/app/backend/server.py`):**
+   - Champ `twintPaymentUrl` ajouté au modèle `AIConfig` (ligne 2130)
+   - Injection du lien dans le contexte IA (routes `/api/chat` et `/api/chat/ai-response`)
+   - Instruction conditionnelle: si lien vide → redirection vers coach
+
+2. **Frontend (`/app/frontend/src/components/CoachDashboard.js`):**
+   - Champ texte "💳 Lien de paiement Twint" dans la section Agent IA (ligne 5381)
+   - data-testid: `twint-payment-url-input`
+   - Warning affiché si non configuré
+
+**Validation:** Test E2E réussi - Quand on demande "Je veux acheter le café, comment je paye ?":
+> "Pour régler ton achat, clique sur ce lien Twint sécurisé: https://twint.ch/pay/afroboost-test-123 💳"
+
+---
+
 ### Fonctionnalité "Modifier une Campagne" (23 Jan 2026)
 1. ✅ **Bouton ✏️ (Modifier)** : Visible dans le tableau pour campagnes draft/scheduled
 2. ✅ **Pré-remplissage du formulaire** : Nom, message, mediaUrl, contacts, canaux
