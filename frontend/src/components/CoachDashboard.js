@@ -3520,8 +3520,18 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
             )}
             
             {/* === MOBILE VIEW: Cards === */}
-            <div className="block md:hidden space-y-3">
-              {reservations.map(r => {
+            <div className="block md:hidden space-y-3 max-h-[600px] overflow-y-auto scrollbar-thin pr-2">
+              {reservations.filter(r => {
+                if (!reservationsSearch) return true;
+                const q = reservationsSearch.toLowerCase();
+                const dateStr = new Date(r.datetime).toLocaleDateString('fr-FR');
+                return r.userName?.toLowerCase().includes(q) ||
+                       r.userEmail?.toLowerCase().includes(q) ||
+                       r.userWhatsapp?.includes(q) ||
+                       r.reservationCode?.toLowerCase().includes(q) ||
+                       dateStr.includes(q) ||
+                       r.courseName?.toLowerCase().includes(q);
+              }).map(r => {
                 const dt = new Date(r.datetime);
                 const isProduct = r.selectedVariants || r.trackingNumber || r.shippingStatus !== 'pending';
                 return (
@@ -3578,7 +3588,17 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                   </div>
                 );
               })}
-              {reservations.length === 0 && <p className="text-center py-8 text-white/50">{t('noReservations')}</p>}
+              {reservations.length === 0 && !reservationsSearch && <p className="text-center py-8 text-white/50">{t('noReservations')}</p>}
+              {reservationsSearch && reservations.filter(r => {
+                const q = reservationsSearch.toLowerCase();
+                const dateStr = new Date(r.datetime).toLocaleDateString('fr-FR');
+                return r.userName?.toLowerCase().includes(q) ||
+                       r.userEmail?.toLowerCase().includes(q) ||
+                       r.userWhatsapp?.includes(q) ||
+                       r.reservationCode?.toLowerCase().includes(q) ||
+                       dateStr.includes(q) ||
+                       r.courseName?.toLowerCase().includes(q);
+              }).length === 0 && <p className="text-center py-8 text-white/50">Aucune réservation correspondante</p>}
             </div>
             
             {/* === DESKTOP VIEW: Table === */}
@@ -3602,7 +3622,17 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {reservations.map(r => {
+                  {reservations.filter(r => {
+                    if (!reservationsSearch) return true;
+                    const q = reservationsSearch.toLowerCase();
+                    const dateStr = new Date(r.datetime).toLocaleDateString('fr-FR');
+                    return r.userName?.toLowerCase().includes(q) ||
+                           r.userEmail?.toLowerCase().includes(q) ||
+                           r.userWhatsapp?.includes(q) ||
+                           r.reservationCode?.toLowerCase().includes(q) ||
+                           dateStr.includes(q) ||
+                           r.courseName?.toLowerCase().includes(q);
+                  }).map(r => {
                     const dt = new Date(r.datetime);
                     const isProduct = r.selectedVariants || r.trackingNumber || r.shippingStatus !== 'pending';
                     return (
@@ -3671,7 +3701,17 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                       </tr>
                     );
                   })}
-                  {reservations.length === 0 && <tr><td colSpan="13" className="text-center py-8" style={{ opacity: 0.5 }}>{t('noReservations')}</td></tr>}
+                  {reservations.length === 0 && !reservationsSearch && <tr><td colSpan="13" className="text-center py-8" style={{ opacity: 0.5 }}>{t('noReservations')}</td></tr>}
+                  {reservationsSearch && reservations.filter(r => {
+                    const q = reservationsSearch.toLowerCase();
+                    const dateStr = new Date(r.datetime).toLocaleDateString('fr-FR');
+                    return r.userName?.toLowerCase().includes(q) ||
+                           r.userEmail?.toLowerCase().includes(q) ||
+                           r.userWhatsapp?.includes(q) ||
+                           r.reservationCode?.toLowerCase().includes(q) ||
+                           dateStr.includes(q) ||
+                           r.courseName?.toLowerCase().includes(q);
+                  }).length === 0 && <tr><td colSpan="13" className="text-center py-8" style={{ opacity: 0.5 }}>Aucune réservation correspondante</td></tr>}
                 </tbody>
               </table>
             </div>
