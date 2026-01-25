@@ -700,8 +700,9 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
         console.log('DELETE_UI: Début suppression réservation:', reservationId);
         await axios.delete(`${API}/reservations/${reservationId}`);
         
+        // Mise à jour immédiate de l'état - supporte id ET _id
         setReservations(prev => {
-          const filtered = prev.filter(r => r.id !== reservationId);
+          const filtered = prev.filter(r => r.id !== reservationId && r._id !== reservationId);
           console.log(`DELETE_UI: Réservations filtrées: ${prev.length} -> ${filtered.length}`);
           return filtered;
         });
