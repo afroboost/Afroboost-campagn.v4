@@ -3695,16 +3695,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                     );
                   })}
                   {reservations.length === 0 && !reservationsSearch && <tr><td colSpan="13" className="text-center py-8" style={{ opacity: 0.5 }}>{t('noReservations')}</td></tr>}
-                  {reservationsSearch && reservations.filter(r => {
-                    const q = reservationsSearch.toLowerCase();
-                    const dateStr = new Date(r.datetime).toLocaleDateString('fr-FR');
-                    return r.userName?.toLowerCase().includes(q) ||
-                           r.userEmail?.toLowerCase().includes(q) ||
-                           r.userWhatsapp?.includes(q) ||
-                           r.reservationCode?.toLowerCase().includes(q) ||
-                           dateStr.includes(q) ||
-                           r.courseName?.toLowerCase().includes(q);
-                  }).length === 0 && <tr><td colSpan="13" className="text-center py-8" style={{ opacity: 0.5 }}>Aucune réservation correspondante</td></tr>}
+                  {filteredReservations.length === 0 && reservationsSearch && <tr><td colSpan="13" className="text-center py-8" style={{ opacity: 0.5 }}>Aucune réservation correspondante</td></tr>}
                 </tbody>
               </table>
             </div>
