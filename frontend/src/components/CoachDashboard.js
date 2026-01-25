@@ -1598,25 +1598,25 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
       await axios.put(`${API}/chat/sessions/${sessionId}`, { is_deleted: true });
       console.log('DELETE_DEBUG: API OK, mise à jour du state...');
       
-      // Mettre à jour TOUS les states qui contiennent cette session
+      // Mettre à jour TOUS les states - supporte id ET _id
       setChatSessions(prev => {
-        const filtered = prev.filter(s => s.id !== sessionId);
+        const filtered = prev.filter(s => s.id !== sessionId && s._id !== sessionId);
         console.log('DELETE_DEBUG: chatSessions filtré:', prev.length, '->', filtered.length);
         return filtered;
       });
       setEnrichedConversations(prev => {
-        const filtered = prev.filter(c => c.id !== sessionId);
+        const filtered = prev.filter(c => c.id !== sessionId && c._id !== sessionId);
         console.log('DELETE_DEBUG: enrichedConversations filtré:', prev.length, '->', filtered.length);
         return filtered;
       });
       setChatLinks(prev => {
-        const filtered = prev.filter(l => l.id !== sessionId);
+        const filtered = prev.filter(l => l.id !== sessionId && l._id !== sessionId);
         console.log('DELETE_DEBUG: chatLinks filtré:', prev.length, '->', filtered.length);
         return filtered;
       });
       
       // Si c'était la session sélectionnée, la désélectionner
-      if (selectedSession?.id === sessionId) {
+      if (selectedSession?.id === sessionId || selectedSession?._id === sessionId) {
         setSelectedSession(null);
         setSessionMessages([]);
       }
@@ -1638,12 +1638,12 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
       console.log('DELETE_DEBUG: API OK pour lien, mise à jour du state...');
       
       setChatLinks(prev => {
-        const filtered = prev.filter(l => l.id !== linkId && l.link_token !== linkId);
+        const filtered = prev.filter(l => l.id !== linkId && l._id !== linkId && l.link_token !== linkId);
         console.log('DELETE_DEBUG: chatLinks filtré:', prev.length, '->', filtered.length);
         return filtered;
       });
       setEnrichedConversations(prev => {
-        const filtered = prev.filter(c => c.id !== linkId && c.link_token !== linkId);
+        const filtered = prev.filter(c => c.id !== linkId && c._id !== linkId && c.link_token !== linkId);
         console.log('DELETE_DEBUG: enrichedConversations filtré:', prev.length, '->', filtered.length);
         return filtered;
       });
