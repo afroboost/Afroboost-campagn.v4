@@ -2845,22 +2845,18 @@ Si la question ne concerne pas un produit ou un cours Afroboost, réponds:
     context += SECURITY_PROMPT
     
     if CAMPAIGN_PROMPT:
-        context += """
-
---- INSTRUCTIONS PRIORITAIRES DE LA CAMPAGNE ACTUELLE (ÉCRASE TOUT LE RESTE) ---
-"""
-        context += f"""
-╔══════════════════════════════════════════════════════════════════╗
-║   🚨 CAMPAIGN_PROMPT - PRIORITÉ ABSOLUE (ÉCRASE TOUT LE RESTE)   ║
-╚══════════════════════════════════════════════════════════════════╝
-
-{CAMPAIGN_PROMPT}
-
-╔══════════════════════════════════════════════════════════════════╗
-║              FIN DES INSTRUCTIONS PRIORITAIRES                   ║
-╚══════════════════════════════════════════════════════════════════╝
-"""
-        logger.info(f"[CHAT-IA] ✅ CAMPAIGN_PROMPT injecté ({len(CAMPAIGN_PROMPT)} chars) - PRIORITÉ ABSOLUE")
+        # PRODUCTION-READY: Concaténation sécurisée (pas de f-string pour éviter les erreurs)
+        # Si CAMPAIGN_PROMPT contient des accolades {} ou %, cela ne cassera pas le formattage
+        context += "\n\n--- INSTRUCTIONS PRIORITAIRES DE LA CAMPAGNE ACTUELLE (ÉCRASE TOUT LE RESTE) ---\n"
+        context += "╔══════════════════════════════════════════════════════════════════╗\n"
+        context += "║   🚨 CAMPAIGN_PROMPT - PRIORITÉ ABSOLUE (ÉCRASE TOUT LE RESTE)   ║\n"
+        context += "╚══════════════════════════════════════════════════════════════════╝\n\n"
+        # Injection sécurisée du contenu utilisateur (concaténation simple)
+        context += CAMPAIGN_PROMPT
+        context += "\n\n╔══════════════════════════════════════════════════════════════════╗\n"
+        context += "║              FIN DES INSTRUCTIONS PRIORITAIRES                   ║\n"
+        context += "╚══════════════════════════════════════════════════════════════════╝\n"
+        logger.info("[CHAT-IA] ✅ CAMPAIGN_PROMPT injecté (" + str(len(CAMPAIGN_PROMPT)) + " chars) - PRIORITÉ ABSOLUE")
     
     # Assemblage final du prompt système
     full_system_prompt = ai_config.get("systemPrompt", "Tu es l'assistant IA d'Afroboost.") + context
