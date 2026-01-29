@@ -528,6 +528,12 @@ export const ChatWidget = () => {
 
   // Fermer la fenêtre MP
   const closePrivateChat = () => {
+    // === SOCKET.IO: Quitter la room de conversation privée ===
+    if (socketRef.current && activePrivateChat?.id) {
+      socketRef.current.emit('leave_private_conversation', {
+        conversation_id: activePrivateChat.id
+      });
+    }
     setActivePrivateChat(null);
     setPrivateMessages([]);
     setPrivateInput('');
