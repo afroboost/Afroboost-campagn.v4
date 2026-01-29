@@ -4631,6 +4631,17 @@ async def send_coach_response(request: Request):
     )
     await db.chat_messages.insert_one(coach_message.model_dump())
     
+    # === SOCKET.IO: Émettre le message coach en temps réel ===
+    await emit_new_message(session_id, {
+        "id": coach_message.id,
+        "type": "coach",
+        "text": message_text,
+        "sender": "💪 Coach Bassi",
+        "senderId": "coach",
+        "sender_type": "coach",
+        "created_at": coach_message.created_at
+    })
+    
     return {
         "success": True,
         "message_id": coach_message.id,
