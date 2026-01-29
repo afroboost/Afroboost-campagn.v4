@@ -1,5 +1,35 @@
 # Afroboost - Document de Référence Produit (PRD)
 
+## Mise à jour du 29 Janvier 2026 - Prompts par Lien avec Mode STRICT
+
+### Nouvelle fonctionnalité : `custom_prompt` par lien avec REMPLACEMENT
+**Objectif**: Permettre au coach de définir des instructions IA spécifiques pour chaque lien de chat, avec une logique de REMPLACEMENT (pas de concaténation) pour garantir l'isolation totale.
+
+**Implémentation Mode STRICT**:
+- Si `custom_prompt` existe sur le lien :
+  - Le `BASE_PROMPT` de vente est **IGNORÉ COMPLÈTEMENT**
+  - Le contexte des cours, tarifs, produits, promos n'est **PAS INJECTÉ**
+  - Seuls `SECURITY_PROMPT` + `CUSTOM_PROMPT` sont utilisés
+  - Log: `[CHAT-IA] 🔒 Mode STRICT : Prompt de lien activé, Base Prompt DÉSACTIVÉ`
+- Si `custom_prompt` est vide/null (anciens liens) :
+  - Mode STANDARD : `BASE_PROMPT` + `SECURITY_PROMPT` + `campaignPrompt` (si défini)
+  - Log: `[CHAT-IA] ✅ Mode STANDARD`
+
+**Critères de réussite**:
+- ✅ Test "George / Partenaires" : L'IA ne mentionne PLUS "cours", "tarifs" ou "faire bouger ton corps"
+- ✅ Logs confirment: `[CHAT-IA] 🔒 Mode STRICT activé - Base Prompt désactivé`
+- ✅ Anciens liens (sans `custom_prompt`) continuent de fonctionner en mode STANDARD
+- ✅ Aucune erreur 500 sur les liens existants
+
+**Fichiers modifiés**:
+- `/app/backend/server.py` : 
+  - Détection précoce du mode STRICT (avant construction du contexte)
+  - Bloc `if not use_strict_mode:` pour les sections BOUTIQUE, COURS, ARTICLES, PROMOS, TWINT
+  - Injection conditionnelle : `SECURITY + CUSTOM` en mode STRICT, `BASE + SECURITY + CAMPAIGN` en mode STANDARD
+- `/app/frontend/src/components/CoachDashboard.js` : Textarea pour `custom_prompt` par lien
+
+---
+
 ## Mise à jour du 29 Janvier 2026 - Prompts par Lien (Mode Production)
 
 ### Nouvelle fonctionnalité : `custom_prompt` par lien
