@@ -1684,8 +1684,14 @@ export const ChatWidget = () => {
                   <input
                     type="text"
                     value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    onChange={handleInputChangeWithTyping}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        emitTyping(false); // Arrêter typing avant d'envoyer
+                        handleSendMessage();
+                      }
+                    }}
+                    onBlur={handleInputBlur}
                     placeholder="Écrivez votre message..."
                     className="flex-1 px-3 py-2 rounded-full text-sm"
                     style={{
