@@ -482,9 +482,10 @@ export const ChatWidget = () => {
   };
 
   // Démarrer le polling quand en mode humain ou communautaire
+  // POLLING RAPIDE: 2 secondes pour une meilleure réactivité
   useEffect(() => {
     if (sessionData && !sessionData.is_ai_active && step === 'chat') {
-      pollingRef.current = setInterval(pollForNewMessages, 3000);
+      pollingRef.current = setInterval(pollForNewMessages, 2000); // 2s pour instantanéité
     }
     
     return () => {
