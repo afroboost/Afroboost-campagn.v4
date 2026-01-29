@@ -898,18 +898,21 @@ export const ChatWidget = () => {
       {/* Fenêtre de chat - Responsive */}
       {isOpen && (
         <div
+          ref={chatContainerRef}
           className="chat-widget-window fixed z-50 shadow-2xl"
           style={{
-            bottom: '80px',
-            right: '20px',
-            width: '380px',
-            maxWidth: 'calc(100vw - 40px)',
-            height: '70vh',
-            maxHeight: '85vh',
-            minHeight: '400px',
-            borderRadius: '16px',
+            bottom: isFullscreen ? '0' : '80px',
+            right: isFullscreen ? '0' : '20px',
+            left: isFullscreen ? '0' : 'auto',
+            top: isFullscreen ? '0' : 'auto',
+            width: isFullscreen ? '100vw' : '380px',
+            maxWidth: isFullscreen ? '100vw' : 'calc(100vw - 40px)',
+            height: isFullscreen ? '100vh' : '70vh',
+            maxHeight: isFullscreen ? '100vh' : '85vh',
+            minHeight: isFullscreen ? '100vh' : '400px',
+            borderRadius: isFullscreen ? '0' : '16px',
             background: '#0a0a0a',
-            border: '1px solid rgba(217, 28, 210, 0.3)',
+            border: isFullscreen ? 'none' : '1px solid rgba(217, 28, 210, 0.3)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden'
