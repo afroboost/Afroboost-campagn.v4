@@ -4008,56 +4008,105 @@ async def get_ai_response_with_session(request: Request):
                             # Type inconnu: afficher quand même sans révéler le code
                             context += "  • Promotion disponible (code: [CODE_APPLIQUÉ_AU_PANIER])\n"
                         promos_injected += 1
-                except Exception as promo_error:
-                    # Log l'erreur mais continue avec les autres promos
-                    logger.warning(f"[CHAT-IA] ⚠️ Promo ignorée (erreur parsing): {promo_error}")
-                    continue
-            
-            if promos_injected > 0:
-                context += "  → Tu peux calculer les prix réduits avec ces remises.\n"
-                context += "  → Ne dis JAMAIS le code. Dis simplement: 'Le code est appliqué automatiquement au panier.'\n"
-                logger.info(f"[CHAT-IA] ✅ {promos_injected} promos injectées (codes masqués)")
-    except Exception as e:
-        logger.warning(f"[CHAT-IA] Erreur récupération promos (non bloquant): {e}")
-    
-    # === SECTION 5: LIEN DE PAIEMENT TWINT ===
-    twint_payment_url = ai_config.get("twintPaymentUrl", "")
-    if twint_payment_url and twint_payment_url.strip():
-        context += f"\n\n💳 LIEN DE PAIEMENT TWINT:\n"
-        context += f"  URL: {twint_payment_url}\n"
-        context += "  → Quand un client confirme vouloir acheter, propose-lui ce lien de paiement sécurisé Twint.\n"
-        logger.info(f"[CHAT-AI-RESPONSE] ✅ Lien Twint injecté: {twint_payment_url[:50]}...")
-    else:
-        logger.info(f"[CHAT-AI-RESPONSE] ⚠️ Pas de lien Twint configuré")
-    
-    # === HISTORIQUE DE CONVERSATION ===
-    try:
-        recent_messages = await db.chat_messages.find(
-            {"session_id": session_id, "is_deleted": {"$ne": True}},
-            {"_id": 0}
-        ).sort("created_at", -1).limit(10).to_list(10)
+                    except Exception as promo_error:
+                        # Log l'erreur mais continue avec les autres promos
+                        logger.warning(f"[CHAT-IA] ⚠️ Promo ignorée (erreur parsing): {promo_error}")
+                        continue
+                
+                if promos_injected > 0:
+                    context += "  → Tu peux calculer les prix réduits avec ces remises.\n"
+                    context += "  → Ne dis JAMAIS le code. Dis simplement: 'Le code est appliqué automatiquement au panier.'\n"
+                    logger.info(f"[CHAT-IA] ✅ {promos_injected} promos injectées (codes masqués)")
+        except Exception as e:
+            logger.warning(f"[CHAT-IA] Erreur récupération promos (non bloquant): {e}")
         
-        if recent_messages and len(recent_messages) > 1:
-            history = "\n".join([
-                f"{'Client' if m.get('sender_type') == 'user' else 'Assistant'}: {m.get('content', '')}"
-                for m in reversed(recent_messages[1:])  # Exclure le message actuel
-            ])
-            context += f"\n\n📜 HISTORIQUE RÉCENT:\n{history}"
-    except Exception as e:
-        logger.warning(f"[CHAT-AI-RESPONSE] Erreur récupération historique: {e}")
+        # === SECTION 5: LIEN DE PAIEMENT TWINT ===
+        twint_payment_url = ai_config.get("twintPaymentUrl", "")
+        if twint_payment_url and twint_payment_url.strip():
+            context += f"\n\n💳 LIEN DE PAIEMENT TWINT:\n"
+            context += f"  URL: {twint_payment_url}\n"
+            context += "  → Quand un client confirme vouloir acheter, propose-lui ce lien de paiement sécurisé Twint.\n"
+            logger.info(f"[CHAT-AI-RESPONSE] ✅ Lien Twint injecté: {twint_payment_url[:50]}...")
+        else:
+            logger.info(f"[CHAT-AI-RESPONSE] ⚠️ Pas de lien Twint configuré")
+        
+        # === HISTORIQUE DE CONVERSATION ===
+        try:
+            recent_messages = await db.chat_messages.find(
+                {"session_id": session_id, "is_deleted": {"$ne": True}},
+                {"_id": 0}
+            ).sort("created_at", -1).limit(10).to_list(10)
+            
+            if recent_messages and len(recent_messages) > 1:
+                history = "\n".join([
+                    f"{'Client' if m.get('sender_type') == 'user' else 'Assistant'}: {m.get('content', '')}"
+                    for m in reversed(recent_messages[1:])  # Exclure le message actuel
+                ])
+                context += f"\n\n📜 HISTORIQUE RÉCENT:\n{history}"
+        except Exception as e:
+            logger.warning(f"[CHAT-AI-RESPONSE] Erreur récupération historique: {e}")
+    # === FIN DES SECTIONS VENTE (uniquement en mode STANDARD) ===
     
-    # === RÈGLES STRICTES POUR L'IA ===
-    # Détecter intention essai gratuit
+    # =====================================================================
+    # ARCHITECTURE DE PROMPT - LOGIQUE DE REMPLACEMENT TOTAL
+    # MODE STRICT: custom_prompt REMPLACE BASE_PROMPT (pas d'ajout)
+    # MODE STANDARD: BASE + SECURITY + CAMPAIGN (flux habituel)
+    # =====================================================================
+    
+    # Détecter intention essai gratuit (pour mode STANDARD uniquement)
     user_message_lower = message_text.lower() if message_text else ""
     is_trial_intent = any(word in user_message_lower for word in ['essai', 'gratuit', 'tester', 'essayer', 'test', 'découvrir'])
     
-    # =====================================================================
-    # ARCHITECTURE DE PROMPT AUDITÉE (BASE → SECURITY → CAMPAIGN)
-    # Structure pyramidale avec surcharge: CAMPAIGN écrase tout le reste
-    # =====================================================================
-    
-    # --- 1. BASE_PROMPT : Limite l'IA aux produits/cours ---
-    BASE_PROMPT = """
+    if use_strict_mode:
+        # =====================================================================
+        # MODE STRICT : CONTEXTE MINIMALISTE SANS AUCUNE INFO DE VENTE
+        # =====================================================================
+        # Le custom_prompt REMPLACE ENTIÈREMENT le BASE_PROMPT
+        # AUCUNE donnée de prix, tarif, boutique, Twint n'est injectée
+        
+        STRICT_SYSTEM_PROMPT = """
+╔══════════════════════════════════════════════════════════════════════╗
+║        🔒🔒🔒 MODE STRICT - PARTENARIAT / COLLABORATION 🔒🔒🔒        ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+⛔⛔⛔ INTERDICTIONS ABSOLUES ⛔⛔⛔
+
+Tu as INTERDICTION ABSOLUE de:
+- Citer un PRIX, un TARIF, un COÛT ou un MONTANT (CHF, EUR, $)
+- Mentionner un LIEN DE PAIEMENT (Twint, Stripe, etc.)
+- Parler de COURS, SESSIONS, ABONNEMENTS ou RÉSERVATIONS
+- Orienter vers l'ACHAT ou l'INSCRIPTION
+- Donner des informations sur la BOUTIQUE ou les PRODUITS à vendre
+
+Si on te demande un prix, un tarif ou "combien ça coûte", TU DOIS répondre:
+"Je vous invite à en discuter directement lors de notre échange, je m'occupe uniquement de la partie collaboration."
+
+Si on insiste, répète cette phrase. Ne donne JAMAIS de prix.
+
+🎯 TON RÔLE UNIQUE:
+Tu t'occupes UNIQUEMENT de la COLLABORATION et du PARTENARIAT.
+Tu peux parler du CONCEPT Afroboost (cardio + danse afrobeat + casques audio immersifs).
+Tu ne connais AUCUN prix, AUCUN tarif, AUCUN lien de paiement.
+
+"""
+        # Ajouter le custom_prompt comme instructions exclusives
+        STRICT_SYSTEM_PROMPT += "\n═══════════════════════════════════════════════════════════════\n"
+        STRICT_SYSTEM_PROMPT += "📋 INSTRUCTIONS EXCLUSIVES DU LIEN:\n"
+        STRICT_SYSTEM_PROMPT += "═══════════════════════════════════════════════════════════════\n\n"
+        STRICT_SYSTEM_PROMPT += CUSTOM_PROMPT
+        STRICT_SYSTEM_PROMPT += "\n\n═══════════════════════════════════════════════════════════════\n"
+        
+        # Injecter le prompt STRICT (remplace tout)
+        context += STRICT_SYSTEM_PROMPT
+        logger.info("[CHAT-AI-RESPONSE] 🔒 Mode STRICT activé - Aucune donnée de vente/prix/Twint injectée")
+        
+    else:
+        # =====================================================================
+        # MODE STANDARD : FLUX HABITUEL AVEC TOUTES LES DONNÉES DE VENTE
+        # =====================================================================
+        
+        # --- 1. BASE_PROMPT : Limite l'IA aux produits/cours ---
+        BASE_PROMPT = """
 ╔══════════════════════════════════════════════════════════════════╗
 ║                    BASE_PROMPT - IDENTITÉ IA                     ║
 ╚══════════════════════════════════════════════════════════════════╝
