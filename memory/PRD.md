@@ -1,5 +1,49 @@
 # Afroboost - Document de Référence Produit (PRD)
 
+## Mise à jour du 29 Janvier 2026 - Étanchéité TOTALE du Mode STRICT
+
+### Architecture de filtrage physique des données
+**Objectif**: Empêcher l'IA de citer des prix même via l'historique ou en insistant.
+
+**Implémentation FORCE - Filtrage Physique**:
+1. **Détection précoce du mode STRICT** (AVANT construction du contexte)
+   - Si `session.custom_prompt` existe → `use_strict_mode = True`
+   - Détection à la ligne ~2590 pour `/api/chat`
+   - Détection à la ligne ~3810 pour `/api/chat/ai-response`
+
+2. **Bloc conditionnel `if not use_strict_mode:`** englobant toutes les sections de vente :
+   - SECTION 1: INVENTAIRE BOUTIQUE (prix)
+   - SECTION 2: COURS DISPONIBLES (prix)
+   - SECTION 3: ARTICLES
+   - SECTION 4: PROMOS
+   - SECTION 5: LIEN TWINT
+   - HISTORIQUE (pour `/api/chat/ai-response`)
+
+3. **STRICT_SYSTEM_PROMPT** : Prompt minimaliste remplaçant BASE_PROMPT
+   - Interdictions absolues de citer prix/tarif/Twint
+   - Réponse obligatoire : "Je vous invite à en discuter directement lors de notre échange..."
+   - Session LLM isolée (pas d'historique)
+
+**Tests réussis**:
+- ✅ **Test Jean 2.0** : "Quels sont les prix ?" → REFUS (collaboration uniquement)
+- ✅ **Liens Ads STANDARD** : Continuent de donner les prix normalement
+- ✅ **Logs** : `🔒 Mode STRICT activé - Aucune donnée de vente/prix/Twint injectée`
+
+**Extrait de code prouvant l'exclusion du Twint en mode STRICT**:
+```python
+# === SECTIONS VENTE (UNIQUEMENT en mode STANDARD, pas en mode STRICT) ===
+if not use_strict_mode:
+    # ... BOUTIQUE, COURS, PROMOS ...
+    # === SECTION 5: LIEN DE PAIEMENT TWINT ===
+    twint_payment_url = ai_config.get("twintPaymentUrl", "")
+    if twint_payment_url and twint_payment_url.strip():
+        context += f"\n\n💳 LIEN DE PAIEMENT TWINT:\n"
+        # ...
+# === FIN DES SECTIONS VENTE ===
+```
+
+---
+
 ## Mise à jour du 29 Janvier 2026 - Étanchéité Totale Mode STRICT (Partenaires)
 
 ### Renforcement de la sécurité du Mode STRICT
