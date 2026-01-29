@@ -2706,77 +2706,77 @@ async def chat_with_ai(data: ChatMessage):
             logger.error(f"[CHAT-IA] ❌ Erreur récupération offres/produits: {e}")
             context += "\n\n🛒 BOUTIQUE: Informations temporairement indisponibles.\n"
     
-    # === SECTION 2: COURS DISPONIBLES ===
-    try:
-        courses = await db.courses.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(20)
-        if courses:
-            context += "\n\n🎯 COURS DISPONIBLES:\n"
-            for c in courses[:10]:  # Max 10 cours
-                name = c.get('name', 'Cours')
-                date = c.get('date', '')
-                time_slot = c.get('time', '')
-                location = c.get('location', '')
-                price = c.get('price', '')
-                description = c.get('description', '')[:80] if c.get('description') else ''
-                
-                context += f"  • {name}"
-                if date:
-                    context += f" - {date}"
-                if time_slot:
-                    context += f" à {time_slot}"
-                if location:
-                    context += f" ({location})"
-                if price:
-                    context += f" - {price} CHF"
-                context += "\n"
-                if description:
-                    context += f"    → {description}\n"
-        else:
-            context += "\n\n🎯 COURS: Aucun cours programmé actuellement. Invite le client à suivre nos réseaux pour les prochaines dates.\n"
-    except Exception as e:
-        logger.warning(f"[CHAT-IA] Erreur récupération cours: {e}")
-        context += "\n\n🎯 COURS: Informations temporairement indisponibles.\n"
-    
-    # === SECTION 3: ARTICLES ET ACTUALITÉS ===
-    try:
-        # Récupérer les 10 articles les plus récents
-        articles = await db.articles.find(
-            {"visible": {"$ne": False}}, 
-            {"_id": 0}
-        ).sort("createdAt", -1).to_list(10)
+        # === SECTION 2: COURS DISPONIBLES ===
+        try:
+            courses = await db.courses.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(20)
+            if courses:
+                context += "\n\n🎯 COURS DISPONIBLES:\n"
+                for c in courses[:10]:  # Max 10 cours
+                    name = c.get('name', 'Cours')
+                    date = c.get('date', '')
+                    time_slot = c.get('time', '')
+                    location = c.get('location', '')
+                    price = c.get('price', '')
+                    description = c.get('description', '')[:80] if c.get('description') else ''
+                    
+                    context += f"  • {name}"
+                    if date:
+                        context += f" - {date}"
+                    if time_slot:
+                        context += f" à {time_slot}"
+                    if location:
+                        context += f" ({location})"
+                    if price:
+                        context += f" - {price} CHF"
+                    context += "\n"
+                    if description:
+                        context += f"    → {description}\n"
+            else:
+                context += "\n\n🎯 COURS: Aucun cours programmé actuellement. Invite le client à suivre nos réseaux pour les prochaines dates.\n"
+        except Exception as e:
+            logger.warning(f"[CHAT-IA] Erreur récupération cours: {e}")
+            context += "\n\n🎯 COURS: Informations temporairement indisponibles.\n"
         
-        if articles:
-            context += "\n\n📰 DERNIERS ARTICLES ET ACTUALITÉS:\n"
-            for a in articles[:5]:  # Max 5 articles dans le contexte
-                title = a.get('title', 'Article')
-                summary = a.get('summary', '')[:120] if a.get('summary') else ''
-                link = a.get('link', '')
-                
-                context += f"  • {title}\n"
-                if summary:
-                    context += f"    → {summary}\n"
-                if link:
-                    context += f"    🔗 Lien: {link}\n"
-        else:
-            context += "\n\n📰 ARTICLES: Pas d'articles récents. Le blog arrive bientôt !\n"
-    except Exception as e:
-        logger.warning(f"[CHAT-IA] Erreur récupération articles: {e}")
-        # Silencieux si pas de collection articles
-    
-    # === SECTION 4: PROMOS SPÉCIALES (avec masquage des codes) ===
-    # L'IA peut connaître les remises pour calculer les prix, mais JAMAIS les codes
-    # PRODUCTION-READY: Try/except individuel pour chaque promo
-    try:
-        active_promos = await db.discount_codes.find({"active": True}, {"_id": 0}).to_list(20)
-        if active_promos:
-            context += "\n\n🎁 PROMOTIONS EN COURS:\n"
-            promos_injected = 0
-            for promo in active_promos[:5]:
-                try:
-                    # MASQUAGE TECHNIQUE: Le champ 'code' n'est JAMAIS lu ni transmis
-                    # Seuls 'type' et 'value' sont utilisés pour le calcul
-                    promo_type = promo.get('type', '%')
-                    promo_value = promo.get('value', 0)
+        # === SECTION 3: ARTICLES ET ACTUALITÉS ===
+        try:
+            # Récupérer les 10 articles les plus récents
+            articles = await db.articles.find(
+                {"visible": {"$ne": False}}, 
+                {"_id": 0}
+            ).sort("createdAt", -1).to_list(10)
+            
+            if articles:
+                context += "\n\n📰 DERNIERS ARTICLES ET ACTUALITÉS:\n"
+                for a in articles[:5]:  # Max 5 articles dans le contexte
+                    title = a.get('title', 'Article')
+                    summary = a.get('summary', '')[:120] if a.get('summary') else ''
+                    link = a.get('link', '')
+                    
+                    context += f"  • {title}\n"
+                    if summary:
+                        context += f"    → {summary}\n"
+                    if link:
+                        context += f"    🔗 Lien: {link}\n"
+            else:
+                context += "\n\n📰 ARTICLES: Pas d'articles récents. Le blog arrive bientôt !\n"
+        except Exception as e:
+            logger.warning(f"[CHAT-IA] Erreur récupération articles: {e}")
+            # Silencieux si pas de collection articles
+        
+        # === SECTION 4: PROMOS SPÉCIALES (avec masquage des codes) ===
+        # L'IA peut connaître les remises pour calculer les prix, mais JAMAIS les codes
+        # PRODUCTION-READY: Try/except individuel pour chaque promo
+        try:
+            active_promos = await db.discount_codes.find({"active": True}, {"_id": 0}).to_list(20)
+            if active_promos:
+                context += "\n\n🎁 PROMOTIONS EN COURS:\n"
+                promos_injected = 0
+                for promo in active_promos[:5]:
+                    try:
+                        # MASQUAGE TECHNIQUE: Le champ 'code' n'est JAMAIS lu ni transmis
+                        # Seuls 'type' et 'value' sont utilisés pour le calcul
+                        promo_type = promo.get('type', '%')
+                        promo_value = promo.get('value', 0)
                     
                     # Validation: S'assurer que value est un nombre valide
                     if promo_value is None:
