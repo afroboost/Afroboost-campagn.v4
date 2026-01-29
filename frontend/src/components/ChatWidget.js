@@ -657,6 +657,11 @@ export const ChatWidget = () => {
       setSessionData(session);
       setIsReturningClient(is_returning);
       setIsCommunityMode(session.mode === 'community');
+      
+      // === MISE À JOUR DU MODE COACH APRÈS CONNEXION ===
+      const isCoach = clientData.email?.toLowerCase() === COACH_EMAIL;
+      setIsCoachMode(isCoach);
+      console.log(`[AUTH] Email: ${clientData.email}, isCoach: ${isCoach}`);
 
       // Restaurer l'historique si utilisateur reconnu
       if (is_returning && chat_history && chat_history.length > 0) {
