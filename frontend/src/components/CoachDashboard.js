@@ -2290,7 +2290,8 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     setNewCampaign({ 
       name: "", message: "", mediaUrl: "", mediaFormat: "16:9", 
       targetType: "all", selectedContacts: [], 
-      channels: { whatsapp: true, email: false, instagram: false }, 
+      channels: { whatsapp: true, email: false, instagram: false, group: false },
+      targetGroupId: 'community',
       scheduleSlots: [] 
     });
     setSelectedContactsForCampaign([]);
@@ -2311,7 +2312,8 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
           mediaFormat: newCampaign.mediaFormat,
           targetType: newCampaign.targetType,
           selectedContacts: newCampaign.targetType === "selected" ? selectedContactsForCampaign : [],
-          channels: newCampaign.channels
+          channels: newCampaign.channels,
+          targetGroupId: newCampaign.targetGroupId || 'community'
         };
         const res = await axios.put(`${API}/campaigns/${editingCampaignId}`, updateData);
         setCampaigns(campaigns.map(c => c.id === editingCampaignId ? res.data : c));
