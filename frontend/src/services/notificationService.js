@@ -377,6 +377,76 @@ export const containsLinks = (text) => {
   return urlRegex.test(text);
 };
 
+// ==================== CLIGNOTEMENT TITRE ONGLET ====================
+let originalTitle = document.title;
+let titleInterval = null;
+let isFlashing = false;
+
+/**
+ * Démarre le clignotement du titre de l'onglet pour attirer l'attention
+ * @param {string} message - Message à afficher (ex: "💬 Nouveau message privé !")
+ */
+export const startTitleFlash = (message = '💬 Nouveau message privé !') => {
+  if (isFlashing) return; // Déjà en cours
+  
+  originalTitle = document.title;
+  isFlashing = true;
+  let showMessage = true;
+  
+  titleInterval = setInterval(() => {
+    document.title = showMessage ? message : originalTitle;
+    showMessage = !showMessage;
+  }, 1000); // Alterne toutes les secondes
+  
+  // Écouter le focus de la fenêtre pour arrêter le clignotement
+  const handleFocus = () => {
+    stopTitleFlash();
+    window.removeEventListener('focus', handleFocus);
+  };
+  window.addEventListener('focus', handleFocus);
+};
+
+/**
+ * Arrête le clignotement du titre et restaure le titre original
+ */
+export const stopTitleFlash = () => {
+  if (titleInterval) {
+    clearInterval(titleInterval);
+    titleInterval = null;
+  }
+  document.title = originalTitle;
+  isFlashing = false;
+};
+
+/**
+ * Vérifie si la fenêtre/onglet a le focus
+ * @returns {boolean}
+ */
+export const isWindowFocused = () => {
+  return document.hasFocus();
+};
+
+/**
+ * Notification complète pour MP: son + titre clignotant + badge
+ * À appeler quand un message privé arrive
+ */
+export const notifyPrivateMessage = (senderName = 'Quelqu\'un') => {
+  // Son de notification
+  playNotificationSound('private');
+  
+  // Clignoter le titre si la fenêtre n'a pas le focus
+  if (!isWindowFocused()) {
+    startTitleFlash(`💬 ${senderName} vous a envoyé un message !`);
+  }
+  
+  // Notification navigateur si autorisée
+  showBrowserNotification(
+    '💬 Nouveau message privé',
+    `${senderName} vous a envoyé un message`,
+    'private'
+  );
+};
+
 export default {
   playNotificationSound,
   playPushNotificationSound,
@@ -386,5 +456,9 @@ export default {
   linkifyText,
   parseEmojis,
   parseMessageContent,
-  containsLinks
+  containsLinks,
+  startTitleFlash,
+  stopTitleFlash,
+  isWindowFocused,
+  notifyPrivateMessage
 };
