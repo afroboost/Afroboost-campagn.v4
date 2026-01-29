@@ -3802,25 +3802,59 @@ async def get_ai_response_with_session(request: Request):
         }
     
     # =====================================================================
-    # CONTEXTE DYNAMIQUE COMPLET (IDENTIQUE À /api/chat)
-    # Récupère TOUS les produits, offres, cours et articles depuis MongoDB
+    # DÉTECTION MODE STRICT (AVANT construction du contexte)
+    # =====================================================================
+    use_strict_mode = False
+    CUSTOM_PROMPT = ""
+    
+    # Vérifier si la session a un custom_prompt
+    session_custom_prompt = session.get("custom_prompt") if session else None
+    if session_custom_prompt and isinstance(session_custom_prompt, str) and session_custom_prompt.strip():
+        CUSTOM_PROMPT = session_custom_prompt.strip()
+        use_strict_mode = True
+        logger.info(f"[CHAT-AI-RESPONSE] 🔒 Mode STRICT détecté (custom_prompt présent)")
+    
+    # =====================================================================
+    # CONSTRUCTION DU CONTEXTE - LOGIQUE DE REMPLACEMENT TOTAL
+    # MODE STRICT: Aucune donnée de vente (prix, Twint, etc.)
+    # MODE STANDARD: Contexte complet avec tous les prix
     # =====================================================================
     logger.info("[CHAT-AI-RESPONSE] 🔄 Construction du contexte...")
     
-    context = "\n\n========== CONNAISSANCES DU SITE AFROBOOST ==========\n"
-    context += "Utilise EXCLUSIVEMENT ces informations pour répondre sur les produits, cours, offres et articles.\n"
-    context += "IMPORTANT: Vérifie TOUJOURS l'INVENTAIRE BOUTIQUE avant de dire qu'un produit n'existe pas !\n"
-    
-    # Prénom du client
-    context += f"\n👤 CLIENT: {participant_name} - Utilise son prénom pour être chaleureux.\n"
-    
-    # Concept/Description du site
-    try:
-        concept = await db.concept.find_one({"id": "concept"}, {"_id": 0})
-        if concept and concept.get('description'):
-            context += f"\n📌 À PROPOS D'AFROBOOST:\n{concept.get('description', '')[:500]}\n"
-    except Exception as e:
-        logger.warning(f"[CHAT-AI-RESPONSE] Erreur récupération concept: {e}")
+    if use_strict_mode:
+        # MODE STRICT: Contexte minimaliste sans aucune info de vente
+        context = "\n\n========== MODE STRICT - LIEN PARTENARIAT ==========\n"
+        context += "Tu es l'assistant Afroboost avec un OBJECTIF SPÉCIFIQUE défini ci-dessous.\n"
+        context += "Tu n'as accès à AUCUNE information de prix, tarif ou lien de paiement.\n"
+        
+        # Prénom du client
+        context += f"\n👤 INTERLOCUTEUR: {participant_name}\n"
+        
+        # Concept uniquement (pas de prix)
+        try:
+            concept = await db.concept.find_one({"id": "concept"}, {"_id": 0})
+            if concept and concept.get('description'):
+                context += f"\n📌 CONCEPT AFROBOOST:\n{concept.get('description', '')[:500]}\n"
+        except Exception as e:
+            pass
+        
+        logger.info("[CHAT-AI-RESPONSE] 🔒 Contexte STRICT construit (sans prix/Twint)")
+    else:
+        # MODE STANDARD: Contexte complet avec toutes les données de vente
+        context = "\n\n========== CONNAISSANCES DU SITE AFROBOOST ==========\n"
+        context += "Utilise EXCLUSIVEMENT ces informations pour répondre sur les produits, cours, offres et articles.\n"
+        context += "IMPORTANT: Vérifie TOUJOURS l'INVENTAIRE BOUTIQUE avant de dire qu'un produit n'existe pas !\n"
+        
+        # Prénom du client
+        context += f"\n👤 CLIENT: {participant_name} - Utilise son prénom pour être chaleureux.\n"
+        
+        # Concept/Description du site
+        try:
+            concept = await db.concept.find_one({"id": "concept"}, {"_id": 0})
+            if concept and concept.get('description'):
+                context += f"\n📌 À PROPOS D'AFROBOOST:\n{concept.get('description', '')[:500]}\n"
+        except Exception as e:
+            logger.warning(f"[CHAT-AI-RESPONSE] Erreur récupération concept: {e}")
     
     # === SECTION 1: INVENTAIRE BOUTIQUE (PRODUITS PHYSIQUES) ===
     try:
