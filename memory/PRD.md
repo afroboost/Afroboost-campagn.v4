@@ -1,5 +1,36 @@
 # Afroboost - Document de Référence Produit (PRD)
 
+## Mise à jour du 29 Janvier 2026 - RENDU VISUEL COMPLET & NOTIFICATIONS
+
+### FONCTIONNALITÉS IMPLÉMENTÉES ✅
+
+#### 1. RENDU VISUEL DES EMOJIS (P0) ✅
+**Statut**: IMPLÉMENTÉ
+- Parseur `parseEmojis()` dans `notificationService.js`
+- Tags `[emoji:nom.svg]` convertis en balises `<img>` 20px inline
+- Combiné avec `linkifyText()` via `parseMessageContent()`
+- **Résultat**: Les emojis s'affichent visuellement dans les bulles de chat
+
+#### 2. SYSTÈME DE NOTIFICATION MP ✅
+**Statut**: IMPLÉMENTÉ
+- Compteur `unreadPrivateCount` pour les MP non lus
+- Pastille rouge animée (pulse) sur le bouton WhatsApp
+- Son de notification distinct (`coach`) pour les MP
+- Badge disparaît quand on ouvre la conversation
+
+#### 3. REFACTORING ✅
+**Statut**: COMPLÉTÉ
+- `EmojiPicker.js` extrait (239 lignes)
+- Design amélioré avec emojis natifs rapides (🔥 💪 ❤️ 👍 ⭐ 🎉)
+- `ChatWidget.js` réduit à 2030 lignes
+
+### Fichiers créés/modifiés :
+- `/app/frontend/src/components/EmojiPicker.js` (NOUVEAU)
+- `/app/frontend/src/services/notificationService.js` - parseEmojis(), parseMessageContent()
+- `/app/frontend/src/components/ChatWidget.js` - Import EmojiPicker, unreadPrivateCount
+
+---
+
 ## Mise à jour du 29 Janvier 2026 - FINALISATION PAGE DE CONVERSION
 
 ### FONCTIONNALITÉS IMPLÉMENTÉES ✅
