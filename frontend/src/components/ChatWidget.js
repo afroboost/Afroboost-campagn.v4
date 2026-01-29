@@ -959,6 +959,28 @@ export const ChatWidget = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* Bouton Plein Écran */}
+              {step === 'chat' && (
+                <button
+                  onClick={toggleFullscreen}
+                  title={isFullscreen ? "Quitter le plein écran" : "Mode plein écran"}
+                  style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff'
+                  }}
+                  data-testid="fullscreen-btn"
+                >
+                  {isFullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+                </button>
+              )}
               {/* Menu burger */}
               {step === 'chat' && (
                 <div className="relative">
