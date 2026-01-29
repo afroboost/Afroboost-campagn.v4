@@ -84,6 +84,83 @@ db = client[os.environ.get('DB_NAME', 'afroboost_db')]
 app = FastAPI(title="Afroboost API")
 api_router = APIRouter(prefix="/api")
 
+# ==================== SOCKET.IO CONFIGURATION ====================
+# Configuration Socket.IO pour la messagerie instantanée
+sio = socketio.AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins='*',
+    logger=False,
+    engineio_logger=False
+)
+
+# Dictionnaire pour tracker les connexions par session_id
+connected_clients = {}  # { session_id: [sid1, sid2, ...] }
+
+@sio.event
+async def connect(sid, environ):
+    """Connexion d'un client Socket.IO"""
+    logger.info(f"[SOCKET.IO] Client connecté: {sid}")
+
+@sio.event
+async def disconnect(sid):
+    """Déconnexion d'un client Socket.IO"""
+    # Nettoyer les références
+    for session_id, sids in list(connected_clients.items()):
+        if sid in sids:
+            sids.remove(sid)
+            if not sids:
+                del connected_clients[session_id]
+    logger.info(f"[SOCKET.IO] Client déconnecté: {sid}")
+
+@sio.event
+async def join_session(sid, data):
+    """
+    Un client rejoint une session de chat.
+    data = { "session_id": "xxx", "participant_id": "xxx" }
+    """
+    session_id = data.get("session_id")
+    participant_id = data.get("participant_id")
+    
+    if session_id:
+        # Joindre la room Socket.IO (permet le broadcast par session)
+        await sio.enter_room(sid, session_id)
+        
+        # Tracker la connexion
+        if session_id not in connected_clients:
+            connected_clients[session_id] = []
+        if sid not in connected_clients[session_id]:
+            connected_clients[session_id].append(sid)
+        
+        logger.info(f"[SOCKET.IO] Client {sid} a rejoint la session {session_id}")
+        
+        # Confirmer au client
+        await sio.emit('joined_session', {
+            'session_id': session_id,
+            'participant_id': participant_id,
+            'status': 'connected'
+        }, room=sid)
+
+@sio.event
+async def leave_session(sid, data):
+    """Un client quitte une session"""
+    session_id = data.get("session_id")
+    if session_id:
+        await sio.leave_room(sid, session_id)
+        if session_id in connected_clients and sid in connected_clients[session_id]:
+            connected_clients[session_id].remove(sid)
+
+async def emit_new_message(session_id: str, message_data: dict):
+    """
+    Émet un événement 'message_received' à tous les clients d'une session.
+    Appelé par les endpoints de chat quand un message est envoyé.
+    """
+    if session_id:
+        await sio.emit('message_received', message_data, room=session_id)
+        logger.info(f"[SOCKET.IO] Message émis dans session {session_id}")
+
+# Créer l'app ASGI combinée
+socket_app = socketio.ASGIApp(sio, other_asgi_app=app)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
