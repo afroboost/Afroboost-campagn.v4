@@ -1,5 +1,36 @@
 # Afroboost - Document de Référence Produit (PRD)
 
+## Mise à jour du 29 Janvier 2026 - STABILISATION FINALE (PRODUCTION READY)
+
+### CORRECTIONS FINALES ✅
+
+#### 1. RENDU VISUEL DES EMOJIS (P0) ✅
+**Statut**: PRODUCTION READY
+- Tags `[emoji:file.svg]` JAMAIS visibles pour le client
+- Fallback emoji natif si image ne charge pas (🔥 💪 ❤️ 👍 ⭐ 🎉)
+- Mapping `EMOJI_FALLBACK_MAP` dans `notificationService.js`
+- Attribut `onerror` sur les balises img pour le fallback
+
+#### 2. NOTIFICATIONS SONORES & VISUELLES MP (P0) ✅
+**Statut**: PRODUCTION READY
+- Son `private` (triple bip ascendant) pour les MP
+- Fonction `startTitleFlash()` - Titre onglet clignotant "💬 Nouveau message !"
+- Auto-stop du clignotement quand fenêtre reprend le focus
+- `notifyPrivateMessage()` combine son + titre + notification navigateur
+
+#### 3. VÉRIFICATION BUILD ✅
+**Statut**: VALIDÉ
+- Imports vérifiés entre EmojiPicker.js, notificationService.js, ChatWidget.js
+- Dossier `/uploads/emojis/` servi via StaticFiles (ligne 275)
+- Persistance testée : 5 F5 consécutifs sans bug
+
+### Fichiers modifiés :
+- `/app/frontend/src/services/notificationService.js` - Son 'private', startTitleFlash(), notifyPrivateMessage()
+- `/app/frontend/src/components/ChatWidget.js` - Import des nouvelles fonctions
+- `/app/frontend/src/components/EmojiPicker.js` - Fallback emoji natifs
+
+---
+
 ## Mise à jour du 29 Janvier 2026 - RENDU VISUEL COMPLET & NOTIFICATIONS
 
 ### FONCTIONNALITÉS IMPLÉMENTÉES ✅
