@@ -647,17 +647,16 @@ export const ChatWidget = () => {
     openPrivateChat(targetId, targetName);
   };
 
-  // Supprimer le chargement des emojis - maintenant géré par EmojiPicker
-  useEffect(() => {
-    loadCustomEmojis();
-  }, []);
-
-  // Insérer un emoji dans l'input
+  // Insérer un emoji dans l'input (utilisé par EmojiPicker)
   const insertEmoji = (emojiName) => {
-    // Ajouter le nom de l'emoji comme texte (ou l'URL de l'image)
-    const emojiUrl = `${API}/emojis/${emojiName}`;
-    const emojiTag = `[emoji:${emojiName}]`;
-    setInputMessage(prev => prev + emojiTag);
+    // Si c'est un emoji natif (🔥), l'ajouter directement
+    if (emojiName.length <= 2 && /[\u{1F300}-\u{1F9FF}]/u.test(emojiName)) {
+      setInputMessage(prev => prev + emojiName);
+    } else {
+      // Sinon c'est un emoji personnalisé -> tag
+      const emojiTag = `[emoji:${emojiName}]`;
+      setInputMessage(prev => prev + emojiTag);
+    }
     setShowEmojiPicker(false);
   };
 
