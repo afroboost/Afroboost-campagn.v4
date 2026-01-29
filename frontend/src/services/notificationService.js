@@ -292,6 +292,44 @@ export const linkifyText = (text) => {
 };
 
 /**
+ * Parse les tags [emoji:filename.svg] et les convertit en balises <img>
+ * Compatible avec linkifyText (préserve les URLs)
+ * @param {string} text - Texte avec potentiels tags emoji
+ * @returns {string} - Texte avec balises img pour les emojis
+ */
+export const parseEmojis = (text) => {
+  if (!text) return '';
+  
+  const API = process.env.REACT_APP_BACKEND_URL + '/api';
+  
+  // Regex pour détecter [emoji:filename.svg] ou [emoji:filename]
+  const emojiRegex = /\[emoji:([^\]]+)\]/g;
+  
+  return text.replace(emojiRegex, (match, filename) => {
+    // Ajouter .svg si pas d'extension
+    const file = filename.includes('.') ? filename : `${filename}.svg`;
+    return `<img src="${API}/emojis/${file}" alt="${filename.replace('.svg', '')}" class="chat-emoji" style="width:20px;height:20px;vertical-align:middle;display:inline-block;margin:0 2px;" />`;
+  });
+};
+
+/**
+ * Combine le parsing d'emojis et la création de liens
+ * @param {string} text - Texte brut
+ * @returns {string} - Texte HTML avec emojis et liens
+ */
+export const parseMessageContent = (text) => {
+  if (!text) return '';
+  
+  // D'abord parser les emojis
+  let parsed = parseEmojis(text);
+  
+  // Puis ajouter les liens (linkifyText préserve les balises img)
+  parsed = linkifyText(parsed);
+  
+  return parsed;
+};
+
+/**
  * Vérifie si le texte contient des URLs
  * @param {string} text - Texte à vérifier
  * @returns {boolean}
