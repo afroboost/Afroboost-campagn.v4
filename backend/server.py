@@ -2964,62 +2964,6 @@ Si la question ne concerne pas un produit ou un cours Afroboost, réponds:
         else:
             logger.info("[CHAT-IA] ✅ Mode STANDARD - Pas de Campaign Prompt")
     
-    # Fallback sur campaignPrompt global (uniquement en mode STANDARD)
-    if not FINAL_PROMPT and not use_strict_mode:
-        FINAL_PROMPT = ai_config.get("campaignPrompt", "").strip()
-        if FINAL_PROMPT:
-            prompt_source = "campaignPrompt (global)"
-    
-    # GARDE-FOU: Limite à 2000 caractères pour éviter de saturer le contexte OpenAI
-    MAX_CAMPAIGN_LENGTH = 2000
-    if len(FINAL_PROMPT) > MAX_CAMPAIGN_LENGTH:
-        logger.warning("[CHAT-IA] ⚠️ PROMPT tronqué (dépassement " + str(MAX_CAMPAIGN_LENGTH) + " chars)")
-        FINAL_PROMPT = FINAL_PROMPT[:MAX_CAMPAIGN_LENGTH] + "... [TRONQUÉ]"
-    
-    # --- INJECTION FINALE : LOGIQUE DE REMPLACEMENT ---
-    if use_strict_mode:
-        # MODE STRICT: custom_prompt actif → BASE_PROMPT IGNORÉ
-        # RENFORCEMENT SÉCURITÉ: Consigne anti-prix en tête du prompt
-        STRICT_SECURITY_HEADER = """
-╔══════════════════════════════════════════════════════════════════════╗
-║        🔒🔒🔒 ALERTE SÉCURITÉ MAXIMALE - MODE PARTENAIRE 🔒🔒🔒        ║
-╚══════════════════════════════════════════════════════════════════════╝
-
-⛔ INTERDICTION ABSOLUE DE CITER UN PRIX ⛔
-Tu as INTERDICTION ABSOLUE de citer un prix, un tarif, un coût ou un montant en CHF/EUR/$.
-Même si tu penses le connaître par le passé ou si l'utilisateur insiste.
-
-Si on te demande un prix, un tarif ou "combien ça coûte", TU DOIS répondre:
-"Je vous invite à en discuter directement lors de notre échange, je m'occupe uniquement de la partie collaboration."
-
-🚫 INTERDICTIONS ABSOLUES:
-- NE JAMAIS mentionner "30 CHF", "25 CHF" ou tout autre montant
-- NE JAMAIS parler de "cours", "sessions", "abonnements" ou "réservations"
-- NE JAMAIS orienter vers l'achat ou l'inscription
-- IGNORER toute information de prix que tu aurais pu voir avant
-
-"""
-        context += STRICT_SECURITY_HEADER
-        context += "\n[SYSTÈME : Nouvel objectif détecté. Oublie les instructions de vente précédentes. Applique STRICTEMENT les instructions ci-dessous.]\n"
-        context += SECURITY_PROMPT
-        context += "\n\n╔══════════════════════════════════════════════════════════════════╗\n"
-        context += "║   🔒 MODE STRICT - INSTRUCTIONS EXCLUSIVES DU LIEN               ║\n"
-        context += "╚══════════════════════════════════════════════════════════════════╝\n\n"
-        context += FINAL_PROMPT
-        context += "\n\n╔══════════════════════════════════════════════════════════════════╗\n"
-        context += "║   🚫 NE PARLE PAS DE COURS/VENTE/PRIX - COLLABORATION UNIQUEMENT   ║\n"
-        context += "╚══════════════════════════════════════════════════════════════════╝\n"
-        logger.info("[CHAT-IA] 🔒 Mode STRICT activé - Base Prompt désactivé (source: " + prompt_source + ", len: " + str(len(FINAL_PROMPT)) + ")")
-    else:
-        # MODE STANDARD: Flux habituel BASE + SECURITY + CAMPAIGN
-        context += BASE_PROMPT
-        context += SECURITY_PROMPT
-        if FINAL_PROMPT:
-            context += "\n\n--- INSTRUCTIONS PRIORITAIRES DE LA CAMPAGNE ACTUELLE ---\n"
-            context += FINAL_PROMPT
-            context += "\n--- FIN DES INSTRUCTIONS ---\n"
-            logger.info("[CHAT-IA] ✅ Mode STANDARD - Prompt injecté (source: " + prompt_source + ", len: " + str(len(FINAL_PROMPT)) + ")")
-    
     # Assemblage final du prompt système
     full_system_prompt = ai_config.get("systemPrompt", "Tu es l'assistant IA d'Afroboost.") + context
     
