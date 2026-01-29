@@ -292,8 +292,27 @@ export const linkifyText = (text) => {
 };
 
 /**
+ * Mapping des emojis personnalisés vers leurs équivalents natifs (fallback)
+ */
+const EMOJI_FALLBACK_MAP = {
+  'fire': '🔥',
+  'fire.svg': '🔥',
+  'muscle': '💪',
+  'muscle.svg': '💪',
+  'heart': '❤️',
+  'heart.svg': '❤️',
+  'thumbsup': '👍',
+  'thumbsup.svg': '👍',
+  'star': '⭐',
+  'star.svg': '⭐',
+  'celebration': '🎉',
+  'celebration.svg': '🎉'
+};
+
+/**
  * Parse les tags [emoji:filename.svg] et les convertit en balises <img>
  * Compatible avec linkifyText (préserve les URLs)
+ * Inclut un fallback vers l'emoji natif si l'image ne charge pas
  * @param {string} text - Texte avec potentiels tags emoji
  * @returns {string} - Texte avec balises img pour les emojis
  */
@@ -308,7 +327,13 @@ export const parseEmojis = (text) => {
   return text.replace(emojiRegex, (match, filename) => {
     // Ajouter .svg si pas d'extension
     const file = filename.includes('.') ? filename : `${filename}.svg`;
-    return `<img src="${API}/emojis/${file}" alt="${filename.replace('.svg', '')}" class="chat-emoji" style="width:20px;height:20px;vertical-align:middle;display:inline-block;margin:0 2px;" />`;
+    const emojiName = filename.replace('.svg', '');
+    
+    // Emoji natif en fallback
+    const fallbackEmoji = EMOJI_FALLBACK_MAP[filename] || EMOJI_FALLBACK_MAP[file] || '😊';
+    
+    // Balise img avec onerror pour afficher l'emoji natif en fallback
+    return `<img src="${API}/emojis/${file}" alt="${emojiName}" class="chat-emoji" style="width:20px;height:20px;vertical-align:middle;display:inline-block;margin:0 2px;" onerror="this.outerHTML='${fallbackEmoji}'" />`;
   });
 };
 
