@@ -1747,77 +1747,13 @@ export const ChatWidget = () => {
                     position: 'relative'
                   }}
                 >
-                  {/* === SÉLECTEUR D'EMOJIS PERSONNALISÉS === */}
-                  {showEmojiPicker && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: '60px',
-                        left: '12px',
-                        background: '#1a1a1a',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: '12px',
-                        padding: '12px',
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: '8px',
-                        zIndex: 100,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-                      }}
-                      data-testid="emoji-picker"
-                    >
-                      <div style={{ 
-                        gridColumn: '1 / -1', 
-                        fontSize: '11px', 
-                        color: 'rgba(255,255,255,0.5)', 
-                        marginBottom: '4px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}>
-                        <span>Emojis 💪</span>
-                        <button 
-                          onClick={() => setShowEmojiPicker(false)}
-                          style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}
-                        >✕</button>
-                      </div>
-                      {customEmojis.map((emoji, idx) => {
-                        // Gérer les deux formats: objet API ou string fallback
-                        const emojiName = typeof emoji === 'object' ? emoji.name : emoji.replace('.svg', '');
-                        const emojiFile = typeof emoji === 'object' ? emoji.filename : emoji;
-                        const emojiUrl = typeof emoji === 'object' ? emoji.url : `/emojis/${emoji}`;
-                        
-                        return (
-                          <button
-                            key={idx}
-                            onClick={() => insertEmoji(emojiFile)}
-                            style={{
-                              width: '40px',
-                              height: '40px',
-                              borderRadius: '8px',
-                              background: 'rgba(255,255,255,0.1)',
-                              border: 'none',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'transform 0.1s, background 0.2s'
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(147, 51, 234, 0.3)'}
-                            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                            data-testid={`emoji-${emojiName}`}
-                          >
-                            <img 
-                              src={`${API}${emojiUrl}`} 
-                              alt={emojiName}
-                              style={{ width: '24px', height: '24px' }}
-                              onError={(e) => { e.target.style.display = 'none'; }}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                  {/* === SÉLECTEUR D'EMOJIS (Composant externe) === */}
+                  <EmojiPicker 
+                    isOpen={showEmojiPicker}
+                    onClose={() => setShowEmojiPicker(false)}
+                    onSelect={insertEmoji}
+                    position="bottom"
+                  />
                   
                   {/* Bouton Emoji */}
                   <button
