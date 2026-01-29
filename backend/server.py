@@ -4563,6 +4563,17 @@ Si la question ne concerne pas un produit ou un cours Afroboost, réponds:
         )
         await db.chat_messages.insert_one(ai_message.model_dump())
         
+        # === SOCKET.IO: Émettre la réponse IA en temps réel ===
+        await emit_new_message(session_id, {
+            "id": ai_message.id,
+            "type": "ai",
+            "text": ai_response_text,
+            "sender": "💪 Coach Bassi",
+            "senderId": "ai",
+            "sender_type": "ai",
+            "created_at": ai_message.created_at
+        })
+        
         # Log
         await db.ai_logs.insert_one({
             "timestamp": datetime.now(timezone.utc).isoformat(),
