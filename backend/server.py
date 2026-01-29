@@ -2817,6 +2817,9 @@ async def chat_with_ai(data: ChatMessage):
     # === FIN DES SECTIONS VENTE (uniquement en mode STANDARD) ===
     
     # === RÈGLES STRICTES POUR L'IA ===
+    # Récupérer le lien de paiement Twint (toujours, pour le SECURITY_PROMPT)
+    twint_payment_url = ai_config.get("twintPaymentUrl", "")
+    
     # Détecter intention essai gratuit
     message_lower = message.lower()
     is_trial_intent = any(word in message_lower for word in ['essai', 'gratuit', 'tester', 'essayer', 'test', 'découvrir'])
